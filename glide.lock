@@ -1,12 +1,12 @@
-hash: fa5adea36a6205cd9c044a9f5be3028655687bae161c14fea83e0558e36fb1e5
-updated: 2017-08-29T11:57:22.1477733-04:00
+hash: 1a5d613bd9c726122dcca98e541db3e1c80a9f4d9d121cec43ce693cc35463fd
+updated: 2017-09-30T00:02:58.426353808-07:00
 imports:
 - name: github.com/agl/ed25519
-  version: 278e1ec8e8a6e017cd07577924d6766039146ced
+  version: 5312a61534124124185d41f09206b9fef1d88403
   subpackages:
   - edwards25519
 - name: github.com/boltdb/bolt
-  version: 583e8937c61f1af6513608ccc75c97b6abdf4ff9
+  version: 2f1ce7a837dcb8da3ec595b1dac9d0632f0f99e8
 - name: github.com/btcsuite/btclog
   version: 84c8d2346e9fc8c7b947e243b9c24e6df9fd206a
 - name: github.com/btcsuite/go-socks
@@ -17,10 +17,18 @@ imports:
   version: 31079b6807923eb23992c421b114992b95131b55
 - name: github.com/dchest/blake256
   version: dee3fe6eb0e98dc774a94fc231f85baf7c29d360
+- name: github.com/golang/protobuf
+  version: 130e6b02ab059e7b717a096f397c5b60111cae74
+  subpackages:
+  - proto
+  - ptypes
+  - ptypes/any
+  - ptypes/duration
+  - ptypes/timestamp
 - name: github.com/HcashOrg/bitset
-  version: 484b833245d5f9046e2893a6bd2e54b1df3a53a4
+  version: 3b5f0c752dfbeeda856fd6af60e997257ca399fc
 - name: github.com/HcashOrg/hcashd
-  version: aa2b50714e27326abf240da092123c66c5f008c8
+  version: 7550bc73ca7dbf20dab7cd850316f0f36123e6c6
   subpackages:
   - blockchain
   - blockchain/internal/dbnamespace
@@ -40,25 +48,20 @@ imports:
   - txscript
   - wire
 - name: github.com/HcashOrg/hcashrpcclient
-  version: abc326aeb97b299c7eb6b13b81353fc375e9b95d
+  version: bde5ceb06ad47c461394da5e670af815d332470e
 - name: github.com/HcashOrg/hcashutil
-  version: 166211f0196be1d3be344ae64149e7c4f5ca36b0
+  version: b0144e1f9f6ed8ffb3493a5c33650e2b6b837f17
   subpackages:
   - base58
   - hdkeychain
-- name: github.com/golang/protobuf
-  version: 5a0f697c9ed9d68fef0116532c6e05cfeae00e55
-  subpackages:
-  - proto
-  - ptypes/any
 - name: github.com/jessevdk/go-flags
-  version: 48cf8722c3375517aba351d1f7577c40663a4407
+  version: 96dc06278ce32a0e9d957d590bb987c81ee66407
 - name: github.com/jrick/logrotate
   version: a93b200c26cbae3bb09dd0dc2c7c7fe1468a034a
   subpackages:
   - rotator
 - name: golang.org/x/crypto
-  version: eb71ad9bd329b5ac0fd0148dd99bd62e8be8e035
+  version: 76eec36fa14229c4b25bb894c2d0e591527af429
   subpackages:
   - nacl/secretbox
   - pbkdf2
@@ -68,7 +71,7 @@ imports:
   - scrypt
   - ssh/terminal
 - name: golang.org/x/net
-  version: 57efc9c3d9f91fb3277f8da1cff370539c4d3dc5
+  version: 0a9397675ba34b2845f758fe3cd68828369c6517
   subpackages:
   - context
   - http2
@@ -78,31 +81,32 @@ imports:
   - lex/httplex
   - trace
 - name: golang.org/x/sync
-  version: f52d1811a62927559de87708c8913c1650ce4f26
+  version: 8e0aa688b654ef28caa72506fa5ec8dba9fc7690
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: 07c182904dbd53199946ba614a412c61d3c548f5
+  version: 314a259e304ff91bd6985da2a7149bbf91237993
   subpackages:
   - unix
   - windows
 - name: golang.org/x/text
-  version: cc24f0397b10b6321b1a1322b6bd592984fdabf2
+  version: 1cbadb444a806fd9430d14ad08967ed91da4fa0a
   subpackages:
   - secure/bidirule
   - transform
   - unicode/bidi
   - unicode/norm
 - name: google.golang.org/genproto
-  version: aa2eb687b4d3e17154372564ad8d6bf11c3cf21f
+  version: 1e559d0a00eef8a9a43151db4665280bd8dd5886
   subpackages:
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: d8960bd63c6743defa6d54926e5edfa8e4a28e43
+  version: f92cdcd7dcdc69e81b2d7b338479a19a8723cfa3
   subpackages:
   - codes
+  - connectivity
   - credentials
-  - grpclb/grpc_lb_v1
+  - grpclb/grpc_lb_v1/messages
   - grpclog
   - internal
   - keepalive
@@ -115,7 +119,7 @@ imports:
   - transport
 testImports:
 - name: github.com/davecgh/go-spew
-  version: adab96458c51a58dc1783b3335dcce5461522e75
+  version: a476722483882dd40b8111f0eb64e1d7f43f56e4
   subpackages:
   - spew
 - name: github.com/pmezard/go-difflib
@@ -123,6 +127,6 @@ testImports:
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
-  version: f6abca593680b2315d2075e0f5e2a9751e3f431a
+  version: 890a5c3458b43e6104ff5da8dfa139d013d77544
   subpackages:
   - assert
