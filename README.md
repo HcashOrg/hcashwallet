@@ -1,6 +1,5 @@
 # hcashwallet
 
-## Overview
 
 Hcashwallet is a daemon handling hcash wallet functionality for a single user.  
 
