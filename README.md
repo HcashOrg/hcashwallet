@@ -74,7 +74,7 @@ You can run hcashctl.exe and type in the following common instructions to gain d
 
 PS: Hcashctl will be installed with the installation of hcashd.
 ```
-hcashctl getinfo  		           //Displays the basic info about the network including current block number and network difficulty.
+hcashctl getinfo    //Displays the basic info about the network including current block number and network difficulty.
 hcashctl --wallet getnewaddress   //Get a new address in the given account.
 hcashctl --wallet getbalance      //Get the spendable balance in the given account. 
 hcashctl --wallet getstakeinfo    //Get info about the current status of the PoS pool. 
