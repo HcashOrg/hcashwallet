@@ -2355,19 +2355,16 @@ func (s *Store) UnspentTickets(dbtx walletdb.ReadTx, syncHeight int32, syncKeyHe
 			if txRecKey == nil {
 				continue
 			}
-			var height int32
+
 			var keyHeight int32
-			err := readRawTxRecordBlockHeight(txRecKey, &height)
+			
+
+			err := readRawTxRecordBlockKeyHeight(txRecKey, &keyHeight)
 			if err != nil {
 				return nil, err
 			}
 
-			err = readRawTxRecordBlockHeight(txRecKey, &keyHeight)
-			if err != nil {
-				return nil, err
-			}
-
-			if !confirmed(int32(s.chainParams.TicketMaturity)+1, keyHeight, syncKeyHeight) {
+			if !confirmed(int32(s.chainParams.TicketMaturity + 1), keyHeight, syncKeyHeight) {
 				continue
 			}
 		}
