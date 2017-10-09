@@ -120,6 +120,7 @@ var rpcHandlers = map[string]struct {
 	"listsinceblock":          {handlerWithChain: listSinceBlock},
 	"listscripts":             {handler: listScripts},
 	"listtransactions":        {handler: listTransactions},
+	"listtxs":      		   {handler: listTxs},
 	"listunspent":             {handler: listUnspent},
 	"lockunspent":             {handler: lockUnspent},
 	"purchaseticket":          {handler: purchaseTicket},
@@ -1793,6 +1794,34 @@ func listScripts(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 	return &hcashjson.ListScriptsResult{Scripts: listScriptsResultSIs}, nil
 }
 
+// listTxs handles a listtxs request by returning an
+// array of maps with details of wallet transactions.
+func listTxs(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
+	cmd := icmd.(*hcashjson.ListTxsCmd)
+	// TODO: ListTxs does not currently understand the difference
+	// between transactions pertaining to one account from another.  This
+	// will be resolved when wtxmgr is combined with the waddrmgr namespace.
+
+	if cmd.Account != nil && *cmd.Account != "*" {
+		// For now, don't bother trying to continue if the user
+		// specified an account, since this can't be (easily or
+		// efficiently) calculated.
+		return nil, &hcashjson.RPCError{
+			Code:    hcashjson.ErrRPCWallet,
+			Message: "Transactions are not yet grouped by account",
+		}
+	}
+	if *(cmd.TxType) > 3 {
+		return nil, &hcashjson.RPCError{
+			Code:    hcashjson.ErrRPCWallet,
+			Message: "TxType is out of bound",
+		}
+	}
+
+	return w.ListTxs(*cmd.TxType, *cmd.From, *cmd.Count)
+
+}
+
 // listTransactions handles a listtransactions request by returning an
 // array of maps with details of sent and recevied wallet transactions.
 func listTransactions(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
@@ -2024,12 +2053,17 @@ func makeOutputs(pairs map[string]hcashutil.Amount, chainParams *chaincfg.Params
 // It returns the transaction hash in string format upon success
 // All errors are returned in hcashjson.RPCError format
 func sendPairs(w *wallet.Wallet, amounts map[string]hcashutil.Amount,
-	account uint32, minconf int32) (string, error) {
+	account uint32, notSend int32, minconf int32) (string, error) {
 	outputs, err := makeOutputs(amounts, w.ChainParams())
 	if err != nil {
 		return "", err
 	}
+	if notSend == 1{
+		txSize, err := w.CalcOutputs(outputs, account, minconf)
+		return txSize, err
+	}
 	txSha, err := w.SendOutputs(outputs, account, minconf)
+
 	if err != nil {
 		if err == txrules.ErrAmountNegative {
 			return "", ErrNeedPositiveAmount
@@ -2339,7 +2373,7 @@ func sendFrom(icmd interface{}, w *wallet.Wallet, chainClient *chain.RPCClient) 
 		cmd.ToAddress: amt,
 	}
 
-	return sendPairs(w, pairs, account, minConf)
+	return sendPairs(w, pairs, account, 0, minConf)
 }
 
 // sendMany handles a sendmany RPC request by creating a new transaction
@@ -2349,7 +2383,13 @@ func sendFrom(icmd interface{}, w *wallet.Wallet, chainClient *chain.RPCClient) 
 // Upon success, the TxID for the created transaction is returned.
 func sendMany(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 	cmd := icmd.(*hcashjson.SendManyCmd)
-
+	notSend := *(cmd.NotSend)
+	if notSend > 1 {
+		return nil, &hcashjson.RPCError{
+			Code:    hcashjson.ErrRPCUnimplemented,
+			Message: "notSend is out of bound",
+		}
+	}
 	// Transaction comments are not yet supported.  Error instead of
 	// pretending to save them.
 	if !isNilOrEmpty(cmd.Comment) {
@@ -2380,7 +2420,7 @@ func sendMany(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 		pairs[k] = amt
 	}
 
-	return sendPairs(w, pairs, account, minConf)
+	return sendPairs(w, pairs, account, int32(notSend), minConf)
 }
 
 // sendToAddress handles a sendtoaddress RPC request by creating a new
@@ -2416,7 +2456,7 @@ func sendToAddress(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 	}
 
 	// sendtoaddress always spends from the default account, this matches bitcoind
-	return sendPairs(w, pairs, udb.DefaultAccountNum, 1)
+	return sendPairs(w, pairs, udb.DefaultAccountNum, 0, 1)
 }
 
 // sendToMultiSig handles a sendtomultisig RPC request by creating a new

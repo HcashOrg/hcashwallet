@@ -336,6 +336,36 @@ var helpDescsEnUS = map[string]string{
 	"listtransactions-from":             "Number of transactions to skip before results are created",
 	"listtransactions-includewatchonly": "Unused",
 
+	// ListTxsResult help.
+	"listtxsresult-account":           "DEPRECATED -- Unset",
+	"listtxsresult-address":           "Payment address for a transaction output",
+	"listtxsresult-amount":            "The value of the transaction output valued in hypercash",
+	"listtxsresult-fee":               "The total input value minus the total output value for sent transactions",
+	"listtxsresult-confirmations":     "The number of block confirmations of the transaction",
+	"listtxsresult-blockhash":         "The hash of the block this transaction is mined in, or the empty string if unmined",
+	"listtxsresult-blockheight":       "The height of the block this transaction is mined in, or the empty string if unmined",
+	"listtxsresult-blockkeyheight":    "The keyheight of the block this transaction is mined in, or the empty string if unmined",
+	"listtxsresult-blockindex":        "Unset",
+	"listtxsresult-blocktime":         "The Unix time of the block header this transaction is mined in, or 0 if unmined",
+	"listtxsresult-txid":              "The hash of the transaction",
+	"listtxsresult-walletconflicts":   "Unset",
+	"listtxsresult-timereceived":      "The earliest Unix time this transaction was known to exist",
+	"listtxsresult-involveswatchonly": "Unset",
+	"listtxsresult-comment":           "Unset",
+	"listtxsresult-otheraccount":      "Unset",
+	"listtxsresult-txtype":            "The type of tx (regular send tx, stake send tx, coinbase, SStx, SSGEN, SSRtx)",
+	"listtxsresult-stakediff":         "The ticket price of SStx, or the empty string if unSStx ",
+	"listtxsresult-Source":            "The source addresses of regular receive transaction",
+	"listtxsresult-Dest":              "The destination addresses of regular send transaction",
+
+	// ListTxsCmd help.
+	"listtxs--synopsis":        "Returns a JSON array of objects containing verbose details for wallet transactions.",
+	"listtxs-account":          "DEPRECATED -- Unused (must be unset or \"*\")",
+	"listtxs-txType":           "Filter the results depend on txType",
+	"listtxs-count":            "Maximum number of transactions to create results from",
+	"listtxs-from":             "Number of transactions to skip before results are created",
+	"listtxs-includewatchonly": "Unused",
+
 	// ListUnspentCmd help.
 	"listunspent--synopsis": "Returns a JSON array of objects representing unlocked unspent outputs controlled by wallet keys.",
 	"listunspent-minconf":   "Minimum number of block confirmations required before a transaction output is considered",
@@ -383,9 +413,10 @@ var helpDescsEnUS = map[string]string{
 	"sendmany-amounts--desc":  "JSON object using payment addresses as keys and output amounts valued in hypercash to send to each address",
 	"sendmany-amounts--key":   "Address to pay",
 	"sendmany-amounts--value": "Amount to send to the payment address valued in hypercash",
+	"sendmany-notSend":        "If notSend = 1, return the estimateSize of transaction without create and relay the transaction",
 	"sendmany-minconf":        "Minimum number of block confirmations required before a transaction output is eligible to be spent",
 	"sendmany-comment":        "Unused",
-	"sendmany--result0":       "The transaction hash of the sent transaction",
+	"sendmany--result0":       "The transaction hash of the sent transaction or the estimateSize of the transaction",
 
 	// SendToAddressCmd help.
 	"sendtoaddress--synopsis": "Authors, signs, and sends a transaction that outputs some amount to a payment address.\n" +

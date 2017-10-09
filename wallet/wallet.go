@@ -1119,6 +1119,7 @@ type (
 	createTxRequest struct {
 		account uint32
 		outputs []*wire.TxOut
+		notSend int32
 		minconf int32
 		resp    chan createTxResponse
 	}
@@ -1227,7 +1228,7 @@ out:
 				txr.resp <- createTxResponse{nil, err}
 				continue
 			}
-			tx, err := w.txToOutputs(txr.outputs, txr.account,
+			tx, err := w.txToOutputs(txr.outputs, txr.account,txr.notSend,
 				txr.minconf, true)
 			heldUnlock.release()
 			txr.resp <- createTxResponse{tx, err}
@@ -1320,12 +1321,13 @@ func (w *Wallet) Consolidate(inputs int, account uint32,
 // automatically included, if necessary.  All transaction creation through this
 // function is serialized to prevent the creation of many transactions which
 // spend the same outputs.
-func (w *Wallet) CreateSimpleTx(account uint32, outputs []*wire.TxOut,
+func (w *Wallet) CreateSimpleTx(account uint32, outputs []*wire.TxOut,notSend int32,
 	minconf int32) (*txauthor.AuthoredTx, error) {
 
 	req := createTxRequest{
 		account: account,
 		outputs: outputs,
+		notSend: notSend,
 		minconf: minconf,
 		resp:    make(chan createTxResponse),
 	}
@@ -2196,6 +2198,166 @@ outputs:
 	return results
 }
 
+func isMatchTxType(details *udb.TxDetails, txType int) bool{
+	// txType == 0 means without filter
+	if txType == 0{
+		return true
+	}
+
+	// txType == 1 only presents regular transactions except coinbase transactions
+	// txType == 2 presents coinbase transactions and SSGEN
+	// txType == 3 presents SStx and SSRtx
+	txtp := 1
+	if blockchain.IsCoinBaseTx(&details.MsgTx) {
+		txtp = 2
+	}else {
+		switch details.TxType {
+			case stake.TxTypeSStx:
+				txtp = 3
+			case stake.TxTypeSSGen:
+				txtp = 2
+			case stake.TxTypeSSRtx:
+				txtp = 3
+		}
+	}
+	return txtp == txType
+}
+
+// listTxs creates a object that may be marshalled to a response result
+// for a listtxs RPC.
+// TODO: This should be moved to the legacyrpc package.
+func listTxs(tx walletdb.ReadTx, details *udb.TxDetails, addrMgr *udb.Manager,
+	syncHeight int32, syncKeyHeight int32, net *chaincfg.Params) []hcashjson.ListTxsResult {
+
+	addrmgrNs := tx.ReadBucket(waddrmgrNamespaceKey)
+	var (
+		blockHashStr   string
+		blockTime      int64
+		confirmations  int64
+		blockHeight    int64
+		blockKeyHeight int64
+	)
+	if details.Block.Height != -1 {
+		blockHashStr = details.Block.Hash.String()
+		blockTime = details.Block.Time.Unix()
+		blockHeight = int64(details.Block.Height)
+		blockKeyHeight = int64(details.Block.KeyHeight)
+		confirmations = int64(confirms(details.Block.Height, syncHeight))
+	}
+
+	results := []hcashjson.ListTxsResult{}
+	txHashStr := details.Hash.String()
+	received := details.Received.Unix()
+	send := len(details.Debits) != 0
+
+	txTypeStr := hcashjson.LTTTReceive
+	if blockchain.IsCoinBaseTx(&details.MsgTx) {
+		txTypeStr = hcashjson.LTTTCoinbase
+	}
+	if send == true {
+		txTypeStr = hcashjson.LTTTSend
+	}
+	switch details.TxType {
+	case stake.TxTypeSStx:
+		txTypeStr = hcashjson.LTTTTicket
+	case stake.TxTypeSSGen:
+		txTypeStr = hcashjson.LTTTVote
+	case stake.TxTypeSSRtx:
+		txTypeStr = hcashjson.LTTTRevocation
+	}
+
+	var debitTotal hcashutil.Amount
+	var creditTotal hcashutil.Amount
+	for _, deb := range details.Debits {
+		debitTotal += deb.Amount
+	}
+	for _, deb := range details.Credits {
+		creditTotal += deb.Amount
+	}
+	amountF64 := (creditTotal - debitTotal).ToCoin()
+
+	// Fee can only be determined if every input is a debit.
+	var feeF64 float64
+	if len(details.Debits) == len(details.MsgTx.TxIn) {
+		var outputTotal hcashutil.Amount
+		for _, output := range details.MsgTx.TxOut {
+			outputTotal += hcashutil.Amount(output.Value)
+		}
+		// Note: The actual fee is debitTotal - outputTotal.  However,
+		// this RPC reports negative numbers for fees, so the inverse
+		// is calculated.
+		feeF64 = (outputTotal - debitTotal).ToCoin()
+	}
+
+	var dest []string
+	var source []string
+outputs:
+	for i, output := range details.MsgTx.TxOut {
+		// Determine if this output is a credit, and if so, determine
+		// its spentness.
+		_, addrs, _, _ := txscript.ExtractPkScriptAddrs(output.Version,
+			output.PkScript, net)
+		for _, cred := range details.Credits {
+			if cred.Index == uint32(i) {
+				// Change outputs are ignored.
+				if cred.Change {
+					continue outputs
+				}
+				break
+			}
+		}
+
+		if len(addrs) == 1 {
+			addr := addrs[0]
+			address := addr.EncodeAddress()
+			dest = append(dest, address)
+
+			// receive address presents the source. Users show different addresses to different people,
+			// and use tags to distinguish them
+			if addrMgr.ExistsAddress(addrmgrNs, addrs[0]) {
+				source = append(source, address)
+			}
+		}else{
+			dest = append(dest, "multiAddress")
+		}
+	}
+
+	result := hcashjson.ListTxsResult{
+		TxID:            txHashStr,
+		TimeReceived:    received,
+		Amount:			 amountF64,
+		TxType:          &txTypeStr,
+		Confirmations:   confirmations,
+		BlockHash:       blockHashStr,
+		BlockHeight:       blockHeight,
+		BlockKeyHeight:    blockKeyHeight,
+		BlockTime:       blockTime,
+		WalletConflicts: []string{},
+	}
+
+	if txTypeStr == hcashjson.LTTTTicket{
+		result.StakeDiff = hcashutil.Amount(details.MsgTx.TxOut[0].Value).ToCoin()
+	}
+	if txTypeStr == hcashjson.LTTTSend{
+		result.Dest = dest
+	}
+	if txTypeStr == hcashjson.LTTTSend || txTypeStr == hcashjson.LTTTTicket || txTypeStr == hcashjson.LTTTRevocation{
+		result.Fee = feeF64
+	}
+	if txTypeStr == hcashjson.LTTTReceive{
+		result.Source = source
+	}
+	if txTypeStr == hcashjson.LTTTCoinbase{
+		result.Source = append(result.Source, "mining reward")
+	}
+	if txTypeStr == hcashjson.LTTTVote{
+		result.Source = append(result.Source, "staking reward")
+	}
+
+	results = append(results, result)
+	return results
+}
+
 // ListSinceBlock returns a slice of objects with details about transactions
 // since the given block. If the block is -1 then all transactions are included.
 // This is intended to be used for listsinceblock RPC replies.
@@ -2252,6 +2414,62 @@ func (w *Wallet) ListTransactions(from, count int) ([]hcashjson.ListTransactions
 
 				jsonResults := listTransactions(tx, &details[i],
 					w.Manager, tipHeight, tipKeyHeight, w.chainParams)
+				txList = append(txList, jsonResults...)
+
+				if len(jsonResults) > 0 {
+					n++
+				}
+			}
+
+			return false, nil
+		}
+
+		// Return newer results first by starting at mempool height and working
+		// down to the genesis block.
+		return w.TxStore.RangeTransactions(txmgrNs, -1, 0, rangeFn)
+	})
+	return txList, err
+}
+
+// ListTxs returns a slice of objects with details about a recorded
+// transaction.  This is intended to be used for listtxs RPC replies.
+func (w *Wallet) ListTxs(txType, from, count int) ([]hcashjson.ListTxsResult, error) {
+	txList := []hcashjson.ListTxsResult{}
+	err := walletdb.View(w.db, func(tx walletdb.ReadTx) error {
+		txmgrNs := tx.ReadBucket(wtxmgrNamespaceKey)
+
+		// Get current block.  The block height used for calculating
+		// the number of tx confirmations.
+		_, tipHeight := w.TxStore.MainChainTip(txmgrNs)
+		tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
+		// Need to skip the first from transactions, and after those, only
+		// include the next count transactions.
+		skipped := 0
+		n := 0
+
+		rangeFn := func(details []udb.TxDetails) (bool, error) {
+			// Iterate over transactions at this height in reverse order.
+			// This does nothing for unmined transactions, which are
+			// unsorted, but it will process mined transactions in the
+			// reverse order they were marked mined.
+			for i := len(details) - 1; i >= 0; i-- {
+				if n >= count {
+					return true, nil
+				}
+
+				// filter with txType
+				if !isMatchTxType(&details[i], txType){
+					continue
+				}
+
+				if from > skipped {
+					skipped++
+					continue
+				}
+
+				jsonResults := listTxs(tx, &details[i],
+					w.Manager, tipHeight, tipKeyHeight, w.chainParams)
+
 				txList = append(txList, jsonResults...)
 
 				if len(jsonResults) > 0 {
@@ -3450,7 +3668,7 @@ func (w *Wallet) SendOutputs(outputs []*wire.TxOut, account uint32,
 
 	// Create transaction, replying with an error if the creation
 	// was not successful.
-	createdTx, err := w.CreateSimpleTx(account, outputs, minconf)
+	createdTx, err := w.CreateSimpleTx(account, outputs, 0, minconf)
 	if err != nil {
 		return nil, err
 	}
@@ -3459,6 +3677,31 @@ func (w *Wallet) SendOutputs(outputs []*wire.TxOut, account uint32,
 	// serialize it again.
 	hash := createdTx.Tx.TxHash()
 	return &hash, nil
+}
+
+// SendOutputs creates and sends payment transactions. It returns the
+// transaction hash upon success
+func (w *Wallet) CalcOutputs(outputs []*wire.TxOut, account uint32,
+	minconf int32) (string, error) {
+
+	relayFee := w.RelayFee()
+	for _, output := range outputs {
+		err := txrules.CheckOutput(output, relayFee)
+		if err != nil {
+			return "-1", err
+		}
+	}
+
+	// Create transaction, replying with an error if the creation
+	// was not successful.
+	createdTx, err := w.CreateSimpleTx(account, outputs, 1, minconf)
+	if err != nil {
+		return "-1", err
+	}
+	sizeStr := strconv.Itoa(createdTx.EstimatedSignedSerializeSize)
+	// TODO: The record already has the serialized tx, so no need to
+	// serialize it again.
+	return sizeStr, nil
 }
 
 // SignatureError records the underlying error when validating a transaction

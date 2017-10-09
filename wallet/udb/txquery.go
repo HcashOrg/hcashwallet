@@ -39,7 +39,9 @@ type DebitRecord struct {
 // TxDetails is intended to provide callers with access to rich details
 // regarding a relevant transaction and which inputs and outputs are credit or
 // debits.
-type TxDetails struct {
+type
+
+	TxDetails struct {
 	TxRecord
 	Block   BlockMeta
 	Credits []CreditRecord

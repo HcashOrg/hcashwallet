@@ -16,6 +16,7 @@ var (
 	returnsString      = []interface{}{(*string)(nil)}
 	returnsStringArray = []interface{}{(*[]string)(nil)}
 	returnsLTRArray    = []interface{}{(*[]hcashjson.ListTransactionsResult)(nil)}
+	returnsLTXSArray    = []interface{}{(*[]hcashjson.ListTxsResult)(nil)}
 )
 
 // Methods contains all methods and result types that help is generated for,
@@ -56,6 +57,7 @@ var Methods = []struct {
 	{"listreceivedbyaddress", []interface{}{(*[]hcashjson.ListReceivedByAddressResult)(nil)}},
 	{"listsinceblock", []interface{}{(*hcashjson.ListSinceBlockResult)(nil)}},
 	{"listtransactions", returnsLTRArray},
+	{"listtxs", returnsLTXSArray},
 	{"listunspent", []interface{}{(*hcashjson.ListUnspentResult)(nil)}},
 	{"lockunspent", returnsBool},
 	{"redeemmultisigout", []interface{}{(*hcashjson.RedeemMultiSigOutResult)(nil)}},

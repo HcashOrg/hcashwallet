@@ -797,6 +797,12 @@ func (m *Manager) AddrAccount(ns walletdb.ReadBucket, address hcashutil.Address)
 	return account, nil
 }
 
+// ExistsAddress returns whether or not the address id exists in the database.
+func (m *Manager) ExistsAddress(ns walletdb.ReadBucket, address hcashutil.Address) bool{
+	address = normalizeAddress(address)
+	return existsAddress(ns, address.ScriptAddress())
+}
+
 // ChangePassphrase changes either the public or private passphrase to the
 // provided value depending on the private flag.  In order to change the private
 // password, the address manager must not be watching-only.  The new passphrase

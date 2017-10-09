@@ -365,7 +365,7 @@ func (w *Wallet) insertMultisigOutIntoTxMgr(ns walletdb.ReadWriteBucket, msgTx *
 // txToOutputs creates a transaction, selecting previous outputs from an account
 // with no less than minconf confirmations, and creates a signed transaction
 // that pays to each of the outputs.
-func (w *Wallet) txToOutputs(outputs []*wire.TxOut, account uint32, minconf int32,
+func (w *Wallet) txToOutputs(outputs []*wire.TxOut, account uint32, notSend int32, minconf int32,
 	randomizeChangeIdx bool) (*txauthor.AuthoredTx, error) {
 
 	chainClient, err := w.requireChainClient()
@@ -373,7 +373,7 @@ func (w *Wallet) txToOutputs(outputs []*wire.TxOut, account uint32, minconf int3
 		return nil, err
 	}
 
-	return w.txToOutputsInternal(outputs, account, minconf, chainClient,
+	return w.txToOutputsInternal(outputs, account, notSend, minconf, chainClient,
 		randomizeChangeIdx, w.RelayFee())
 }
 
@@ -388,7 +388,7 @@ func (w *Wallet) txToOutputs(outputs []*wire.TxOut, account uint32, minconf int3
 // Hypercash: This func also sends the transaction, and if successful, inserts it
 // into the database, rather than delegating this work to the caller as
 // btcwallet does.
-func (w *Wallet) txToOutputsInternal(outputs []*wire.TxOut, account uint32, minconf int32, chainClient *chain.RPCClient,
+func (w *Wallet) txToOutputsInternal(outputs []*wire.TxOut, account uint32, notSend int32, minconf int32, chainClient *chain.RPCClient,
 	randomizeChangeIdx bool, txFee hcashutil.Amount) (*txauthor.AuthoredTx, error) {
 
 	var atx *txauthor.AuthoredTx
@@ -429,6 +429,10 @@ func (w *Wallet) txToOutputsInternal(outputs []*wire.TxOut, account uint32, minc
 	if err != nil {
 		return nil, err
 	}
+	
+	if notSend == 1{
+		return atx, nil
+	}
 
 	// Ensure valid signatures were created.
 	err = validateMsgTx(atx.Tx, atx.PrevScripts)
@@ -448,6 +452,7 @@ func (w *Wallet) txToOutputsInternal(outputs []*wire.TxOut, account uint32, minc
 	if err != nil {
 		return nil, err
 	}
+
 
 	// Use a single DB update to store and publish the transaction.  If the
 	// transaction is rejected, the update is rolled back.
@@ -1113,7 +1118,7 @@ func (w *Wallet) purchaseTickets(req purchaseTicketRequest) ([]*chainhash.Hash, 
 	if txFeeIncrement == 0 {
 		txFeeIncrement = w.RelayFee()
 	}
-	splitTx, err := w.txToOutputsInternal(splitOuts, account, req.minConf,
+	splitTx, err := w.txToOutputsInternal(splitOuts, account, 0, req.minConf,
 		chainClient, false, txFeeIncrement)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send split transaction: %v", err)
