@@ -103,9 +103,9 @@ func (s *Store) InsertMemPoolTx(ns walletdb.ReadWriteBucket, rec *TxRecord) erro
 
 	txType := stake.DetermineTxType(&rec.MsgTx)
 
-	for _, input := range rec.MsgTx.TxIn {
+	for i, input := range rec.MsgTx.TxIn {
 		// Skip stakebases for votes.
-		if txType == stake.TxTypeSSGen {
+		if i == 0 && txType == stake.TxTypeSSGen {
 			continue
 		}
 		prevOut := &input.PreviousOutPoint

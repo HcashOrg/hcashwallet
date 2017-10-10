@@ -216,11 +216,12 @@ func readCanonicalOutPoint(k []byte, op *wire.OutPoint) error {
 // these can be removed from the block record in a future update.
 //
 //   [0:32]  Hash (32 bytes)
-//   [32:40] Unix time (8 bytes)
-//   [40:42] VoteBits (2 bytes/uint16)
-//   [42:43] Whether regular transactions are stake invalidated (1 byte, 0==false)
-//   [43:47] Number of transaction hashes (4 bytes)
-//   [47:]   For each transaction hash:
+//   [32:36] KeyHeight (4 bytes)
+//   [36:44] Unix time (8 bytes)
+//   [44:46] VoteBits (2 bytes/uint16)
+//   [46:47] Whether regular transactions are stake invalidated (1 byte, 0==false)
+//   [47:51] Number of transaction hashes (4 bytes)
+//   [51:]   For each transaction hash:
 //             Hash (32 bytes)
 
 func keyBlockRecord(height int32) []byte {
@@ -489,7 +490,8 @@ func existsBlockHeader(ns walletdb.ReadBucket, k []byte) []byte {
 //
 //   [0:32]  Transaction hash (32 bytes)
 //   [32:36] Block height (4 bytes)
-//   [36:68] Block hash (32 bytes)
+//   [36:40] Block key height (4 bytes)
+//   [40:72] Block hash (32 bytes)
 //
 // The leading transaction hash allows to prefix filter for all records with
 // a matching hash.  The block height and hash records a particular incidence
@@ -718,10 +720,11 @@ func latestTxRecord(ns walletdb.ReadBucket, txHash []byte) (k, v []byte) {
 //
 //   [0:32]  Transaction hash (32 bytes)
 //   [32:36] Block height (4 bytes)
-//   [36:68] Block hash (32 bytes)
-//   [68:72] Output index (4 bytes)
+//   [36:40] Block key height (4 bytes)
+//   [40:72] Block hash (32 bytes)
+//   [72:76] Output index (4 bytes)
 //
-// The first 68 bytes match the key for the transaction record and may be used
+// The first 72 bytes match the key for the transaction record and may be used
 // as a prefix filter to iterate through all credits in order.
 //
 // The credit value is serialized as such:
@@ -1091,7 +1094,8 @@ func (it *creditIterator) next() bool {
 // Values are serialized as such:
 //
 //   [0:4]   Block height (4 bytes)
-//   [4:36]  Block hash (32 bytes)
+//   [4:8]   Block key height (4 bytes)
+//   [8:40]  Block hash (32 bytes)
 
 func valueUnspent(block *Block) []byte {
 	v := make([]byte, 40)
@@ -1171,10 +1175,11 @@ func deleteRawUnspent(ns walletdb.ReadWriteBucket, k []byte) error {
 //
 //   [0:32]  Transaction hash (32 bytes)
 //   [32:36] Block height (4 bytes)
-//   [36:68] Block hash (32 bytes)
-//   [68:72] Input index (4 bytes)
+//   [36:40] Block key height (4 bytes)
+//   [40:72] Block hash (32 bytes)
+//   [72:76] Input index (4 bytes)
 //
-// The first 68 bytes match the key for the transaction record and may be used
+// The first 72 bytes match the key for the transaction record and may be used
 // as a prefix filter to iterate through all debits in order.
 //
 // The debit value is serialized as such:
@@ -1183,8 +1188,9 @@ func deleteRawUnspent(ns walletdb.ReadWriteBucket, k []byte) error {
 //   [8:80]  Credits bucket key (72 bytes)
 //             [8:40]  Transaction hash (32 bytes)
 //             [40:44] Block height (4 bytes)
-//             [44:76] Block hash (32 bytes)
-//             [76:80] Output index (4 bytes)
+//             [44:48] Block key height (4 bytes)
+//             [48:80] Block hash (32 bytes)
+//             [80:84] Output index (4 bytes)
 
 func keyDebit(txHash *chainhash.Hash, index uint32, block *Block) []byte {
 	k := make([]byte, 76)
