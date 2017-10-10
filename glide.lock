@@ -1,5 +1,5 @@
-hash: 1a5d613bd9c726122dcca98e541db3e1c80a9f4d9d121cec43ce693cc35463fd
-updated: 2017-09-30T00:02:58.426353808-07:00
+hash: 7f45ccb929ee1286cf989e942c71e0618b578a428e58454bcbd46fdff4815b90
+updated: 2017-10-10T03:26:24.657649457Z
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -28,7 +28,7 @@ imports:
 - name: github.com/HcashOrg/bitset
   version: 3b5f0c752dfbeeda856fd6af60e997257ca399fc
 - name: github.com/HcashOrg/hcashd
-  version: 7550bc73ca7dbf20dab7cd850316f0f36123e6c6
+  version: 3e9e8f2a281a8b43e143f971e774b0b713f0c88e
   subpackages:
   - blockchain
   - blockchain/internal/dbnamespace
@@ -48,7 +48,7 @@ imports:
   - txscript
   - wire
 - name: github.com/HcashOrg/hcashrpcclient
-  version: bde5ceb06ad47c461394da5e670af815d332470e
+  version: 6fa250370b6e0a5af9640e7d0adaede9426d643a
 - name: github.com/HcashOrg/hcashutil
   version: b0144e1f9f6ed8ffb3493a5c33650e2b6b837f17
   subpackages:
@@ -61,7 +61,7 @@ imports:
   subpackages:
   - rotator
 - name: golang.org/x/crypto
-  version: 76eec36fa14229c4b25bb894c2d0e591527af429
+  version: 9419663f5a44be8b34ca85f08abc5fe1be11f8a3
   subpackages:
   - nacl/secretbox
   - pbkdf2
@@ -119,11 +119,11 @@ imports:
   - transport
 testImports:
 - name: github.com/davecgh/go-spew
-  version: a476722483882dd40b8111f0eb64e1d7f43f56e4
+  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
   subpackages:
   - spew
 - name: github.com/pmezard/go-difflib
-  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
