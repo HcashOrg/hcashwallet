@@ -638,7 +638,7 @@ func (s *walletServer) StakeInfo(ctx context.Context, req *pb.StakeInfoRequest) 
 		return nil, err
 	}
 
-	si, err := s.wallet.StakeInfo(chainClient.Client)
+	si, err := s.wallet.StakeInfo(false, chainClient.Client)
 	if err != nil {
 		return nil, status.Errorf(codes.FailedPrecondition,
 			"Failed to query stake info: %s", err.Error())

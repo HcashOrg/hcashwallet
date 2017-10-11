@@ -233,7 +233,6 @@ func lazyApplyHandler(request *hcashjson.Request, w *wallet.Wallet, chainClient 
 			return resp, nil
 		}
 	}
-
 	// Fallback to RPC passthrough
 	return func() (interface{}, *hcashjson.RPCError) {
 		if chainClient == nil {
@@ -1204,10 +1203,13 @@ func getMasterPubkey(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 // getStakeInfo gets a large amounts of information about the stake environment
 // and a number of statistics about local staking in the wallet.
 func getStakeInfo(icmd interface{}, w *wallet.Wallet, chainClient *chain.RPCClient) (interface{}, error) {
+	cmd := icmd.(*hcashjson.GetStakeInfoCmd)
+	isLiveTicketDetails := *cmd.IsLiveTicketDetails
+
 	// Asynchronously query for the stake difficulty.
 	sdiffFuture := chainClient.GetStakeDifficultyAsync()
 
-	stakeInfo, err := w.StakeInfo(chainClient.Client)
+	stakeInfo, err := w.StakeInfo(isLiveTicketDetails, chainClient.Client)
 	if err != nil {
 		return nil, err
 	}
@@ -1227,7 +1229,7 @@ func getStakeInfo(icmd interface{}, w *wallet.Wallet, chainClient *chain.RPCClie
 		return nil, err
 	}
 
-	resp := &hcashjson.GetStakeInfoResult{
+	resp := hcashjson.GetStakeInfoResult{
 		BlockHeight:      stakeInfo.BlockHeight,
 		PoolSize:         stakeInfo.PoolSize,
 		Difficulty:       sdiff.NextStakeDifficulty,
@@ -1244,7 +1246,11 @@ func getStakeInfo(icmd interface{}, w *wallet.Wallet, chainClient *chain.RPCClie
 		Expired:          stakeInfo.Expired,
 	}
 
-	return resp, nil
+	if isLiveTicketDetails {
+		resp.LiveTicketDetails = stakeInfo.LiveTicketDetails
+	}
+
+	return &resp, nil
 }
 
 // getTicketFee gets the currently set price per kb for tickets
@@ -2058,7 +2064,7 @@ func sendPairs(w *wallet.Wallet, amounts map[string]hcashutil.Amount,
 	if err != nil {
 		return "", err
 	}
-	if notSend == 1{
+	if notSend == 1 {
 		txSize, err := w.CalcOutputs(outputs, account, minconf)
 		return txSize, err
 	}
@@ -2341,7 +2347,13 @@ func isNilOrEmpty(s *string) bool {
 // the TxID for the created transaction is returned.
 func sendFrom(icmd interface{}, w *wallet.Wallet, chainClient *chain.RPCClient) (interface{}, error) {
 	cmd := icmd.(*hcashjson.SendFromCmd)
-
+	notSend := *(cmd.NotSend)
+	if notSend > 1 {
+		return nil, &hcashjson.RPCError{
+			Code:    hcashjson.ErrRPCUnimplemented,
+			Message: "notSend is out of bound",
+		}
+	}
 	// Transaction comments are not yet supported.  Error instead of
 	// pretending to save them.
 	if !isNilOrEmpty(cmd.Comment) || !isNilOrEmpty(cmd.CommentTo) {
@@ -2373,7 +2385,7 @@ func sendFrom(icmd interface{}, w *wallet.Wallet, chainClient *chain.RPCClient) 
 		cmd.ToAddress: amt,
 	}
 
-	return sendPairs(w, pairs, account, 0, minConf)
+	return sendPairs(w, pairs, account, int32(notSend), minConf)
 }
 
 // sendMany handles a sendmany RPC request by creating a new transaction
@@ -2430,7 +2442,13 @@ func sendMany(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 // the TxID for the created transaction is returned.
 func sendToAddress(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 	cmd := icmd.(*hcashjson.SendToAddressCmd)
-
+	notSend := *(cmd.NotSend)
+	if notSend > 1 {
+		return nil, &hcashjson.RPCError{
+			Code:    hcashjson.ErrRPCUnimplemented,
+			Message: "notSend is out of bound",
+		}
+	}
 	// Transaction comments are not yet supported.  Error instead of
 	// pretending to save them.
 	if !isNilOrEmpty(cmd.Comment) || !isNilOrEmpty(cmd.CommentTo) {
@@ -2456,7 +2474,7 @@ func sendToAddress(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 	}
 
 	// sendtoaddress always spends from the default account, this matches bitcoind
-	return sendPairs(w, pairs, udb.DefaultAccountNum, 0, 1)
+	return sendPairs(w, pairs, udb.DefaultAccountNum, int32(notSend), 1)
 }
 
 // sendToMultiSig handles a sendtomultisig RPC request by creating a new

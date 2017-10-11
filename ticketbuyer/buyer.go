@@ -444,7 +444,7 @@ func (t *TicketPurchaser) Purchase(height int64, keyHeight int64) (*PurchaseStat
 		var curStakeInfo *wallet.StakeInfoData
 		var err error
 		for i := 1; i <= stakeInfoReqTries; i++ {
-			curStakeInfo, err = t.wallet.StakeInfo(t.hcashdChainSvr)
+			curStakeInfo, err = t.wallet.StakeInfo(false, t.hcashdChainSvr)
 			if err != nil {
 				log.Debugf("Waiting for StakeInfo, attempt %v: (%v)", i, err.Error())
 				time.Sleep(stakeInfoReqTryDelay)

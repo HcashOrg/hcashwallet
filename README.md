@@ -78,7 +78,7 @@ hcashctl getinfo                  //Displays the basic info about the network in
 hcashctl --wallet getnewaddress   //Get a new address in the given account.
 hcashctl --wallet getbalance      //Get the spendable balance in the given account. 
 hcashctl --wallet getstakeinfo    //Get info about the current status of the PoS pool. 
-hcashctl --wallet sendtoaddress "[address]" [amount]  //Send hcash from your account to the wanted address
+hcashctl --wallet sendtoaddress "[address]" [amount] [notSend]  //Send hcash from your account to the wanted address
 hcashctl --wallet purchaseticket "[fromaccount]" spendlimit minconf "ticketaddress" "[numtickets]")   
 //Purchase tickets to participate in PoS process. Spendlimit denotes the limit on the amount to spend on ticket, minconf denotes the minimal required confirmation of the transaction(e.g. 1)
 ```

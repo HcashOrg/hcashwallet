@@ -277,7 +277,6 @@ func (s *Server) handlerClosure(ctx context.Context, request *hcashjson.Request)
 		s.chainClient = chainClient
 	}
 	s.handlerMu.Unlock()
-
 	return lazyApplyHandler(request, wallet, chainClient)
 }
 

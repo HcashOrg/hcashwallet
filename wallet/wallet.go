@@ -3198,17 +3198,18 @@ func (w *Wallet) RedeemScriptCopy(addr hcashutil.Address) ([]byte, error) {
 // StakeInfoData is a struct containing the data that would be returned from
 // a StakeInfo request to the wallet.
 type StakeInfoData struct {
-	BlockHeight   int64
-	PoolSize      uint32
-	AllMempoolTix uint32
-	OwnMempoolTix uint32
-	Immature      uint32
-	Live          uint32
-	Voted         uint32
-	Missed        uint32
-	Revoked       uint32
-	Expired       uint32
-	TotalSubsidy  hcashutil.Amount
+	BlockHeight   		int64
+	PoolSize      		uint32
+	AllMempoolTix 		uint32
+	OwnMempoolTix 		uint32
+	Immature      		uint32
+	Live          		uint32
+	Voted         		uint32
+	Missed        		uint32
+	Revoked       		uint32
+	Expired       		uint32
+	TotalSubsidy  		hcashutil.Amount
+	LiveTicketDetails 	[]hcashjson.LiveTicket
 }
 
 func isTicketPurchase(tx *wire.MsgTx) bool {
@@ -3263,7 +3264,7 @@ func (w *Wallet) hasVotingAuthority(addrmgrNs walletdb.ReadBucket, ticketPurchas
 //
 // Getting this information is extremely costly as in involves a massive
 // number of chain server calls.
-func (w *Wallet) StakeInfo(chainClient *hcashrpcclient.Client) (*StakeInfoData, error) {
+func (w *Wallet) StakeInfo(isLiveTicketDetails bool, chainClient *hcashrpcclient.Client) (*StakeInfoData, error) {
 	// This is only needed for the total count and can be optimized.
 	mempoolTicketsFuture := chainClient.GetRawMempoolAsync(hcashjson.GRMTickets)
 
@@ -3273,6 +3274,8 @@ func (w *Wallet) StakeInfo(chainClient *hcashrpcclient.Client) (*StakeInfoData, 
 	// all tickets that are either live, expired, or missed and determine their
 	// states later by querying the consensus RPC server.
 	var liveOrExpiredOrMissed []*chainhash.Hash
+	liveTicketMap := make(map[chainhash.Hash] *hcashjson.LiveTicket)
+	var liveTicketDetails []hcashjson.LiveTicket
 
 	err := walletdb.View(w.db, func(dbtx walletdb.ReadTx) error {
 		addrmgrNs := dbtx.ReadBucket(waddrmgrNamespaceKey)
@@ -3353,6 +3356,18 @@ func (w *Wallet) StakeInfo(chainClient *hcashrpcclient.Client) (*StakeInfoData, 
 			// ticket is live, expired, or missed.
 			ticketHash := it.Hash
 			liveOrExpiredOrMissed = append(liveOrExpiredOrMissed, &ticketHash)
+
+			if isLiveTicketDetails {
+				liveTicket := hcashjson.LiveTicket{
+					TxHash: 		ticketHash.String(),
+					Stakediff:		hcashutil.Amount(it.MsgTx.TxOut[0].Value).ToCoin(),
+					BlockHash:		it.Block.Hash.String(),
+					BlockHeight:  	int64(it.Block.Height),
+					BlockKeyHeight: int64(it.Block.KeyHeight),
+					ReceivedTime:	it.Received.Unix(),
+				}
+				liveTicketMap[ticketHash] = &liveTicket
+			}
 		}
 		if err := it.Err(); err != nil {
 			return err
@@ -3406,6 +3421,9 @@ func (w *Wallet) StakeInfo(chainClient *hcashrpcclient.Client) (*StakeInfoData, 
 		switch {
 		case bitset.Bytes(liveBitset).Get(i):
 			res.Live++
+			if isLiveTicketDetails {
+				liveTicketDetails = append(liveTicketDetails, *(liveTicketMap[*liveOrExpiredOrMissed[i]]))
+			}
 		case bitset.Bytes(expiredBitset).Get(i):
 			res.Expired++
 		default:
@@ -3420,6 +3438,7 @@ func (w *Wallet) StakeInfo(chainClient *hcashrpcclient.Client) (*StakeInfoData, 
 		return nil, err
 	}
 	res.AllMempoolTix = uint32(len(mempoolTickets))
+	res.LiveTicketDetails = liveTicketDetails
 
 	return res, nil
 }

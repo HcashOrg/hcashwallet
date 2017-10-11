@@ -118,7 +118,8 @@ var helpDescsEnUS = map[string]string{
 	"getmultisigoutinforesult-address":      "Script address.",
 
 	// GetStakeInfo help.
-	"getstakeinfo--synopsis": "Returns statistics about staking from the wallet.",
+	"getstakeinfo--synopsis": 			   "Returns statistics about staking from the wallet.",
+	"getstakeinfo-isliveticketdetails":    "if it's true, return the details of live tickets.",
 
 	// GetStakeInfoResult help.
 	"getstakeinforesult-blockheight":      "Current block height for stake info.",
@@ -135,6 +136,7 @@ var helpDescsEnUS = map[string]string{
 	"getstakeinforesult-proportionmissed": "(Missed / (Missed + Voted))",
 	"getstakeinforesult-revoked":          "Number of missed tickets that were missed and then revoked",
 	"getstakeinforesult-expired":          "Number of tickets that have expired",
+	"getstakeinforesult-liveticketdetails":"The details of live tickets",
 
 	// GetTickets help.
 	"gettickets--synopsis":       "Returning the hashes of the tickets currently owned by wallet.",
@@ -400,10 +402,11 @@ var helpDescsEnUS = map[string]string{
 	"sendfrom-fromaccount": "Account to pick unspent outputs from",
 	"sendfrom-toaddress":   "Address to pay",
 	"sendfrom-amount":      "Amount to send to the payment address valued in hypercash",
+	"sendfrom-notSend":     "If notSend = 1, return the estimateSize of transaction without create and relay the transaction",
 	"sendfrom-minconf":     "Minimum number of block confirmations required before a transaction output is eligible to be spent",
 	"sendfrom-comment":     "Unused",
 	"sendfrom-commentto":   "Unused",
-	"sendfrom--result0":    "The transaction hash of the sent transaction",
+	"sendfrom--result0":    "The transaction hash of the sent transaction or the estimateSize of the transaction",
 
 	// SendManyCmd help.
 	"sendmany--synopsis": "Authors, signs, and sends a transaction that outputs to many payment addresses.\n" +
@@ -424,9 +427,10 @@ var helpDescsEnUS = map[string]string{
 		"A change output is automatically included to send extra output value back to the original account.",
 	"sendtoaddress-address":   "Address to pay",
 	"sendtoaddress-amount":    "Amount to send to the payment address valued in hypercash",
+	"sendtoaddress-notSend":   "If notSend = 1, return the estimateSize of transaction without create and relay the transaction",
 	"sendtoaddress-comment":   "Unused",
 	"sendtoaddress-commentto": "Unused",
-	"sendtoaddress--result0":  "The transaction hash of the sent transaction",
+	"sendtoaddress--result0":  "The transaction hash of the sent transaction or the estimateSize of the transaction",
 
 	// SendToMultisigCmd help.
 	"sendtomultisig--synopsis": "Authors, signs, and sends a transaction that outputs some amount to a multisig address.\n" +
