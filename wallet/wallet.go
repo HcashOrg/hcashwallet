@@ -2074,7 +2074,7 @@ func listTransactions(tx walletdb.ReadTx, details *udb.TxDetails, addrMgr *udb.M
 	if details.Block.Height != -1 {
 		blockHashStr = details.Block.Hash.String()
 		blockTime = details.Block.Time.Unix()
-		confirmations = int64(confirms(details.Block.Height, syncHeight))
+		confirmations = int64(confirms(details.Block.KeyHeight, syncKeyHeight))
 	}
 
 	results := []hcashjson.ListTransactionsResult{}
@@ -2242,7 +2242,7 @@ func listTxs(tx walletdb.ReadTx, details *udb.TxDetails, addrMgr *udb.Manager,
 		blockTime = details.Block.Time.Unix()
 		blockHeight = int64(details.Block.Height)
 		blockKeyHeight = int64(details.Block.KeyHeight)
-		confirmations = int64(confirms(details.Block.Height, syncHeight))
+		confirmations = int64(confirms(details.Block.KeyHeight, syncKeyHeight))
 	}
 
 	results := []hcashjson.ListTxsResult{}
