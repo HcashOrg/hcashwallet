@@ -52,6 +52,15 @@ const (
 )
 
 var (
+	SendBits 	   = 0x20
+	ReceiveBits    = 0x10
+	CoinbaseBits   = 0x8
+	TicketBits	   = 0x4
+	VotesBits	   = 0x2
+	RevocationBits = 0x1
+)
+
+var (
 	// SimulationPassphrase is the password for a wallet created for simnet
 	// with --createtemp.
 	SimulationPassphrase = []byte("password")
@@ -2199,35 +2208,62 @@ outputs:
 }
 
 func isMatchTxType(details *udb.TxDetails, txType int) bool{
-	// txType == 0 means without filter
-	if txType == 0{
-		return true
-	}
-
-	// txType == 1 only presents regular transactions except coinbase transactions
-	// txType == 2 presents coinbase transactions and SSGEN
-	// txType == 3 presents SStx and SSRtx
-	txtp := 1
-	if blockchain.IsCoinBaseTx(&details.MsgTx) {
-		txtp = 2
-	}else {
-		switch details.TxType {
-			case stake.TxTypeSStx:
-				txtp = 3
-			case stake.TxTypeSSGen:
-				txtp = 2
-			case stake.TxTypeSSRtx:
-				txtp = 3
+	txTypeStr := setTxTypeStr(details)
+	switch txTypeStr{
+	case hcashjson.LTTTSend:
+		if txType & SendBits == SendBits {
+			return true
+		}
+	case hcashjson.LTTTReceive:
+		if txType & ReceiveBits == ReceiveBits {
+			return true
+		}
+	case hcashjson.LTTTCoinbase:
+		if txType & CoinbaseBits == CoinbaseBits {
+			return true
+		}
+	case hcashjson.LTTTTicket:
+		if txType & TicketBits == TicketBits {
+			return true
+		}
+	case hcashjson.LTTTVote:
+		if txType & VotesBits == VotesBits {
+			return true
+		}
+	case hcashjson.LTTTRevocation:
+		if txType & RevocationBits == RevocationBits {
+			return true
 		}
 	}
-	return txtp == txType
+
+	return false
+}
+
+func setTxTypeStr(details *udb.TxDetails) hcashjson.ListTransactionsTxType {
+	send := len(details.Debits) != 0
+	txTypeStr := hcashjson.LTTTReceive
+	if blockchain.IsCoinBaseTx(&details.MsgTx) {
+		txTypeStr = hcashjson.LTTTCoinbase
+	}
+	if send == true {
+		txTypeStr = hcashjson.LTTTSend
+	}
+	switch details.TxType {
+	case stake.TxTypeSStx:
+		txTypeStr = hcashjson.LTTTTicket
+	case stake.TxTypeSSGen:
+		txTypeStr = hcashjson.LTTTVote
+	case stake.TxTypeSSRtx:
+		txTypeStr = hcashjson.LTTTRevocation
+	}
+	return txTypeStr
 }
 
 // listTxs creates a object that may be marshalled to a response result
 // for a listtxs RPC.
 // TODO: This should be moved to the legacyrpc package.
 func listTxs(tx walletdb.ReadTx, details *udb.TxDetails, addrMgr *udb.Manager,
-	syncHeight int32, syncKeyHeight int32, net *chaincfg.Params) []hcashjson.ListTxsResult {
+	syncHeight int32, syncKeyHeight int32, net *chaincfg.Params) hcashjson.ListTxsResult {
 
 	addrmgrNs := tx.ReadBucket(waddrmgrNamespaceKey)
 	var (
@@ -2245,26 +2281,9 @@ func listTxs(tx walletdb.ReadTx, details *udb.TxDetails, addrMgr *udb.Manager,
 		confirmations = int64(confirms(details.Block.KeyHeight, syncKeyHeight))
 	}
 
-	results := []hcashjson.ListTxsResult{}
 	txHashStr := details.Hash.String()
 	received := details.Received.Unix()
-	send := len(details.Debits) != 0
-
-	txTypeStr := hcashjson.LTTTReceive
-	if blockchain.IsCoinBaseTx(&details.MsgTx) {
-		txTypeStr = hcashjson.LTTTCoinbase
-	}
-	if send == true {
-		txTypeStr = hcashjson.LTTTSend
-	}
-	switch details.TxType {
-	case stake.TxTypeSStx:
-		txTypeStr = hcashjson.LTTTTicket
-	case stake.TxTypeSSGen:
-		txTypeStr = hcashjson.LTTTVote
-	case stake.TxTypeSSRtx:
-		txTypeStr = hcashjson.LTTTRevocation
-	}
+	txTypeStr := setTxTypeStr(details)
 
 	var debitTotal hcashutil.Amount
 	var creditTotal hcashutil.Amount
@@ -2354,8 +2373,7 @@ outputs:
 		result.Source = append(result.Source, "staking reward")
 	}
 
-	results = append(results, result)
-	return results
+	return result
 }
 
 // ListSinceBlock returns a slice of objects with details about transactions
@@ -2457,8 +2475,9 @@ func (w *Wallet) ListTxs(txType, from, count int) ([]hcashjson.ListTxsResult, er
 					return true, nil
 				}
 
+				isMatch := isMatchTxType(&details[i], txType)
 				// filter with txType
-				if !isMatchTxType(&details[i], txType){
+				if !isMatch{
 					continue
 				}
 
@@ -2467,14 +2486,16 @@ func (w *Wallet) ListTxs(txType, from, count int) ([]hcashjson.ListTxsResult, er
 					continue
 				}
 
-				jsonResults := listTxs(tx, &details[i],
+				jsonResult := listTxs(tx, &details[i],
 					w.Manager, tipHeight, tipKeyHeight, w.chainParams)
 
-				txList = append(txList, jsonResults...)
-
-				if len(jsonResults) > 0 {
-					n++
+				// do not show the transactions which amount is zero
+				if jsonResult.Amount == 0 {
+					continue
 				}
+
+				txList = append(txList, jsonResult)
+				n++
 			}
 
 			return false, nil

@@ -1817,7 +1817,7 @@ func listTxs(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 			Message: "Transactions are not yet grouped by account",
 		}
 	}
-	if *(cmd.TxType) > 3 {
+	if *(cmd.TxType) > 63 || *(cmd.TxType) < 1{
 		return nil, &hcashjson.RPCError{
 			Code:    hcashjson.ErrRPCWallet,
 			Message: "TxType is out of bound",

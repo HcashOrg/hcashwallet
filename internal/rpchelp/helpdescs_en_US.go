@@ -363,7 +363,7 @@ var helpDescsEnUS = map[string]string{
 	// ListTxsCmd help.
 	"listtxs--synopsis":        "Returns a JSON array of objects containing verbose details for wallet transactions.",
 	"listtxs-account":          "DEPRECATED -- Unused (must be unset or \"*\")",
-	"listtxs-txType":           "Filter the results depend on txType",
+	"listtxs-txType":           "split transactions into 63 groups",
 	"listtxs-count":            "Maximum number of transactions to create results from",
 	"listtxs-from":             "Number of transactions to skip before results are created",
 	"listtxs-includewatchonly": "Unused",
