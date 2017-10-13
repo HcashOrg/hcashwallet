@@ -2276,10 +2276,10 @@ func listTxs(tx walletdb.ReadTx, details *udb.TxDetails, addrMgr *udb.Manager,
 	if details.Block.Height != -1 {
 		blockHashStr = details.Block.Hash.String()
 		blockTime = details.Block.Time.Unix()
-		blockHeight = int64(details.Block.Height)
-		blockKeyHeight = int64(details.Block.KeyHeight)
 		confirmations = int64(confirms(details.Block.KeyHeight, syncKeyHeight))
 	}
+	blockHeight = int64(details.Block.Height)
+	blockKeyHeight = int64(details.Block.KeyHeight)
 
 	txHashStr := details.Hash.String()
 	received := details.Received.Unix()
