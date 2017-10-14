@@ -2263,7 +2263,7 @@ func setTxTypeStr(details *udb.TxDetails) hcashjson.ListTransactionsTxType {
 // for a listtxs RPC.
 // TODO: This should be moved to the legacyrpc package.
 func listTxs(tx walletdb.ReadTx, details *udb.TxDetails, addrMgr *udb.Manager,
-	syncHeight int32, syncKeyHeight int32, net *chaincfg.Params) hcashjson.ListTxsResult {
+	syncHeight int32, syncKeyHeight int32, net *chaincfg.Params) hcashjson.ListTxsElem {
 
 	addrmgrNs := tx.ReadBucket(waddrmgrNamespaceKey)
 	var (
@@ -2341,7 +2341,7 @@ outputs:
 		}
 	}
 
-	result := hcashjson.ListTxsResult{
+	result := hcashjson.ListTxsElem{
 		TxID:            txHashStr,
 		TimeReceived:    received,
 		Amount:			 amountF64,
@@ -2451,8 +2451,9 @@ func (w *Wallet) ListTransactions(from, count int) ([]hcashjson.ListTransactions
 
 // ListTxs returns a slice of objects with details about a recorded
 // transaction.  This is intended to be used for listtxs RPC replies.
-func (w *Wallet) ListTxs(txType int, from, count int64) ([]hcashjson.ListTxsResult, error) {
-	txList := []hcashjson.ListTxsResult{}
+func (w *Wallet) ListTxs(txType int, from, count int64) (hcashjson.ListTxsResult, error) {
+	var txlistResult hcashjson.ListTxsResult
+	txList := []hcashjson.ListTxsElem{}
 	totalNum := int64(0)
 
 	err := walletdb.View(w.db, func(tx walletdb.ReadTx) error {
@@ -2513,9 +2514,10 @@ func (w *Wallet) ListTxs(txType int, from, count int64) ([]hcashjson.ListTxsResu
 	})
 
 	if len(txList) > 0 {
-		txList[len(txList)-1].TotalNum = totalNum
+		txlistResult.TotalNum = totalNum
+		txlistResult.Transactions = &txList
 	}
-	return txList, err
+	return txlistResult, err
 }
 
 // ListAddressTransactions returns a slice of objects with details about

@@ -16,7 +16,7 @@ var (
 	returnsString      = []interface{}{(*string)(nil)}
 	returnsStringArray = []interface{}{(*[]string)(nil)}
 	returnsLTRArray    = []interface{}{(*[]hcashjson.ListTransactionsResult)(nil)}
-	returnsLTXSArray    = []interface{}{(*[]hcashjson.ListTxsResult)(nil)}
+	returnsLTXSArray    = []interface{}{(*hcashjson.ListTxsResult)(nil)}
 )
 
 // Methods contains all methods and result types that help is generated for,
