@@ -2223,15 +2223,15 @@ func isMatchTxType(details *udb.TxDetails, txType int) bool{
 			return true
 		}
 	case hcashjson.LTTTTicket:
-		if txType & TicketBits == TicketBits {
+		if txType & TicketBits == TicketBits && details.Block.Height != -1 {
 			return true
 		}
 	case hcashjson.LTTTVote:
-		if txType & VotesBits == VotesBits {
+		if txType & VotesBits == VotesBits && details.Block.Height != -1 {
 			return true
 		}
 	case hcashjson.LTTTRevocation:
-		if txType & RevocationBits == RevocationBits {
+		if txType & RevocationBits == RevocationBits && details.Block.Height != -1 {
 			return true
 		}
 	}
