@@ -2451,8 +2451,10 @@ func (w *Wallet) ListTransactions(from, count int) ([]hcashjson.ListTransactions
 
 // ListTxs returns a slice of objects with details about a recorded
 // transaction.  This is intended to be used for listtxs RPC replies.
-func (w *Wallet) ListTxs(txType, from, count int) ([]hcashjson.ListTxsResult, error) {
+func (w *Wallet) ListTxs(txType int, from, count int64) ([]hcashjson.ListTxsResult, error) {
 	txList := []hcashjson.ListTxsResult{}
+	totalNum := int64(0)
+
 	err := walletdb.View(w.db, func(tx walletdb.ReadTx) error {
 		txmgrNs := tx.ReadBucket(wtxmgrNamespaceKey)
 
@@ -2462,8 +2464,8 @@ func (w *Wallet) ListTxs(txType, from, count int) ([]hcashjson.ListTxsResult, er
 		tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
 		// Need to skip the first from transactions, and after those, only
 		// include the next count transactions.
-		skipped := 0
-		n := 0
+		skipped := int64(0)
+		n := int64(0)
 
 		rangeFn := func(details []udb.TxDetails) (bool, error) {
 			// Iterate over transactions at this height in reverse order.
@@ -2471,18 +2473,13 @@ func (w *Wallet) ListTxs(txType, from, count int) ([]hcashjson.ListTxsResult, er
 			// unsorted, but it will process mined transactions in the
 			// reverse order they were marked mined.
 			for i := len(details) - 1; i >= 0; i-- {
-				if n >= count {
-					return true, nil
-				}
+				//if n >= count {
+				//	return true, nil
+				//}
 
 				isMatch := isMatchTxType(&details[i], txType)
 				// filter with txType
 				if !isMatch{
-					continue
-				}
-
-				if from > skipped {
-					skipped++
 					continue
 				}
 
@@ -2494,8 +2491,17 @@ func (w *Wallet) ListTxs(txType, from, count int) ([]hcashjson.ListTxsResult, er
 					continue
 				}
 
-				txList = append(txList, jsonResult)
-				n++
+				totalNum++
+
+				if from > skipped {
+					skipped++
+					continue
+				}
+
+				if n < count {
+					txList = append(txList, jsonResult)
+					n++
+				}
 			}
 
 			return false, nil
@@ -2505,6 +2511,10 @@ func (w *Wallet) ListTxs(txType, from, count int) ([]hcashjson.ListTxsResult, er
 		// down to the genesis block.
 		return w.TxStore.RangeTransactions(txmgrNs, -1, 0, rangeFn)
 	})
+
+	if len(txList) > 0 {
+		txList[len(txList)-1].TotalNum = totalNum
+	}
 	return txList, err
 }
 
