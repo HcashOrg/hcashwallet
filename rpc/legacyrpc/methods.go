@@ -32,8 +32,9 @@ import (
 	"github.com/HcashOrg/hcashwallet/wallet"
 	"github.com/HcashOrg/hcashwallet/wallet/txrules"
 	"github.com/HcashOrg/hcashwallet/wallet/udb"
-	//"unsafe"
+
 	"strconv"
+
 )
 
 // API version constants
@@ -121,6 +122,7 @@ var rpcHandlers = map[string]struct {
 	"listscripts":             {handler: listScripts},
 	"listtransactions":        {handler: listTransactions},
 	"listtxs":      		   {handler: listTxs},
+	"calcpowsubsidy":		   {handler: calcPowSubsidy},
 	"listunspent":             {handler: listUnspent},
 	"lockunspent":             {handler: lockUnspent},
 	"purchaseticket":          {handler: purchaseTicket},
@@ -1825,7 +1827,28 @@ func listTxs(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 	}
 
 	return w.ListTxs(*cmd.TxType, *cmd.From, *cmd.Count)
+}
 
+
+// listTxs handles a listtxs request by returning an
+// array of maps with details of wallet transactions.
+func calcPowSubsidy(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
+	cmd := icmd.(*hcashjson.CalcPowSubsidyCmd)
+	// TODO: ListTxs does not currently understand the difference
+	// between transactions pertaining to one account from another.  This
+	// will be resolved when wtxmgr is combined with the waddrmgr namespace.
+
+	if cmd.Account != nil && *cmd.Account != "*" {
+		// For now, don't bother trying to continue if the user
+		// specified an account, since this can't be (easily or
+		// efficiently) calculated.
+		return nil, &hcashjson.RPCError{
+			Code:    hcashjson.ErrRPCWallet,
+			Message: "Transactions are not yet grouped by account",
+		}
+	}
+
+	return w.CalcPowSubsidy(*cmd.From, *cmd.Count)
 }
 
 // listTransactions handles a listtransactions request by returning an
@@ -3080,6 +3103,7 @@ func validateAddress(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 	// by checking the type of "addr", however, the reference
 	// implementation only puts that information if the script is
 	// "ismine", and we follow that behaviour.
+
 	result.Address = addr.EncodeAddress()
 	result.IsValid = true
 
@@ -3091,6 +3115,7 @@ func validateAddress(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 		}
 		return nil, err
 	}
+
 
 	// The address lookup was successful which means there is further
 	// information about it available and it is "mine".
@@ -3114,6 +3139,7 @@ func validateAddress(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		result.PubKeyAddr = pubKeyAddr.String()
 
 	case udb.ManagedScriptAddress:

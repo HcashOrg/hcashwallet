@@ -58,6 +58,7 @@ var Methods = []struct {
 	{"listsinceblock", []interface{}{(*hcashjson.ListSinceBlockResult)(nil)}},
 	{"listtransactions", returnsLTRArray},
 	{"listtxs", returnsLTXSArray},
+	{"calcpowsubsidy", returnsNumber},
 	{"listunspent", []interface{}{(*hcashjson.ListUnspentResult)(nil)}},
 	{"lockunspent", returnsBool},
 	{"redeemmultisigout", []interface{}{(*hcashjson.RedeemMultiSigOutResult)(nil)}},

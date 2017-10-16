@@ -2473,6 +2473,7 @@ func (w *Wallet) ListTxs(txType int, from, count int64) (hcashjson.ListTxsResult
 			// This does nothing for unmined transactions, which are
 			// unsorted, but it will process mined transactions in the
 			// reverse order they were marked mined.
+
 			for i := len(details) - 1; i >= 0; i-- {
 				//if n >= count {
 				//	return true, nil
@@ -2518,6 +2519,81 @@ func (w *Wallet) ListTxs(txType int, from, count int64) (hcashjson.ListTxsResult
 		txlistResult.Transactions = &txList
 	}
 	return txlistResult, err
+}
+
+
+// ListTxs returns a slice of objects with details about a recorded
+// transaction.  This is intended to be used for listtxs RPC replies.
+func (w *Wallet) CalcPowSubsidy(from, count int) (*float64, error) {
+	var amount hcashutil.Amount = 0
+
+
+	err := walletdb.View(w.db, func(tx walletdb.ReadTx) error {
+		txmgrNs := tx.ReadBucket(wtxmgrNamespaceKey)
+
+		_, tipHeight := w.TxStore.MainChainTip(txmgrNs)
+		from = int(tipHeight) - from
+		// Get current block.  The block height used for calculating
+		// the number of tx confirmations.
+		//_, tipHeight := w.TxStore.MainChainTip(txmgrNs)
+		//tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
+		// Need to skip the first from transactions, and after those, only
+		// include the next count transactions.
+		n := 0
+
+		rangeFn := func(details []udb.TxDetails) (bool, error) {
+			// Iterate over transactions at this height in reverse order.
+			// This does nothing for unmined transactions, which are
+			// unsorted, but it will process mined transactions in the
+			// reverse order they were marked mined.
+
+			for i := len(details) - 1; i >= 0; i--  {
+
+				//if(i >= len(details)){
+				//	break
+				//}
+				fmt.Printf("details height: %v \n", details[i].Block.Height)
+				fmt.Printf("from : %v, count:%v \n", from, count)
+
+				if details[i].Block.Height >= int32(from + count) {
+
+					continue
+				}
+
+				if details[i].Block.Height < int32(from) && details[i].Block.Height != -1{
+					fmt.Printf("end \n")
+					return true, nil
+				}
+
+				fmt.Printf("contains \n")
+
+				//if n >= count {
+				//	fmt.Printf("end i: %v \n", i)
+				//	return true, nil
+				//}
+				if details[i].Block.Height == 1 {
+					return true, nil
+				}
+				if blockchain.IsCoinBaseTx(&details[i].MsgTx) {
+
+					for _,txout := range details[i].MsgTx.TxOut {
+
+						amount = amount + hcashutil.Amount(txout.Value)
+					}
+				}
+
+				n++
+			}
+
+			return false, nil
+		}
+
+		// Return newer results first by starting at mempool height and working
+		// down to the genesis block.
+		return w.TxStore.RangeTransactions(txmgrNs, -1, 0, rangeFn)
+	})
+	result := amount.ToCoin()
+	return &result, err
 }
 
 // ListAddressTransactions returns a slice of objects with details about
