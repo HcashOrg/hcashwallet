@@ -2552,25 +2552,16 @@ func (w *Wallet) CalcPowSubsidy(from, count int) (*float64, error) {
 				//if(i >= len(details)){
 				//	break
 				//}
-				fmt.Printf("details height: %v \n", details[i].Block.Height)
-				fmt.Printf("from : %v, count:%v \n", from, count)
 
-				if details[i].Block.Height >= int32(from + count) {
-
-					continue
-				}
-
-				if details[i].Block.Height < int32(from) && details[i].Block.Height != -1{
-					fmt.Printf("end \n")
+				if int32(count) > 0 && details[i].Block.Height <= int32(from - count) {
 					return true, nil
 				}
 
-				fmt.Printf("contains \n")
+				if details[i].Block.Height > int32(from) && details[i].Block.Height != -1{
+					continue
+				}
 
-				//if n >= count {
-				//	fmt.Printf("end i: %v \n", i)
-				//	return true, nil
-				//}
+				// #Height-1 has no pow subsidy
 				if details[i].Block.Height == 1 {
 					return true, nil
 				}
