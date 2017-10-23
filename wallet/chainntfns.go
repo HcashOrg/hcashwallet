@@ -421,7 +421,11 @@ func (w *Wallet) evaluateStakePoolTicket(rec *udb.TxRecord,
 func (w *Wallet) processSerializedTransaction(dbtx walletdb.ReadWriteTx, serializedTx []byte,
 	serializedHeader *udb.RawBlockHeader, blockMeta *udb.BlockMeta) error {
 
-	rec, err := udb.NewTxRecord(serializedTx, time.Now())
+	tm := time.Now()
+	if serializedHeader != nil {
+		tm = time.Unix(udb.ExtractBlockHeaderTime(serializedHeader[:]),0)
+	}
+	rec, err := udb.NewTxRecord(serializedTx, tm)
 	if err != nil {
 		return err
 	}
