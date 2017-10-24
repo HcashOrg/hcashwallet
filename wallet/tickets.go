@@ -53,13 +53,13 @@ func (w *Wallet) GenerateVoteTx(blockHash *chainhash.Hash, height int32, keyHeig
 func (w *Wallet) LiveTicketHashes(chainClient *chain.RPCClient, includeImmature bool) ([]chainhash.Hash, error) {
 	var ticketHashes []chainhash.Hash
 	var maybeLive []*chainhash.Hash
-
 	extraTickets := w.StakeMgr.DumpSStxHashes()
 
 	expiryConfs := int32(w.chainParams.TicketExpiry) +
 		int32(w.chainParams.TicketMaturity) + 1
 
 	var tipHeight int32 // Assigned in view below.
+	var tipKeyHeight int32
 
 	err := walletdb.View(w.db, func(dbtx walletdb.ReadTx) error {
 		txmgrNs := dbtx.ReadBucket(wtxmgrNamespaceKey)
@@ -76,7 +76,7 @@ func (w *Wallet) LiveTicketHashes(chainClient *chain.RPCClient, includeImmature 
 		}
 
 		_, tipHeight = w.TxStore.MainChainTip(txmgrNs)
-		tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
+		tipKeyHeight = w.TxStore.MainChainTipKeyHeight(txmgrNs)
 
 		it := w.TxStore.IterateTickets(dbtx)
 		for it.Next() {
@@ -117,6 +117,7 @@ func (w *Wallet) LiveTicketHashes(chainClient *chain.RPCClient, includeImmature 
 	type extraTicketResult struct {
 		valid  bool // unspent with known height
 		height int32
+		keyHeight int32
 	}
 	extraTicketResults := make([]extraTicketResult, len(extraTickets))
 	for i := range extraTickets {
@@ -132,7 +133,7 @@ func (w *Wallet) LiveTicketHashes(chainClient *chain.RPCClient, includeImmature 
 			if err != nil {
 				return nil
 			}
-			extraTicketResults[i] = extraTicketResult{true, int32(r.BlockHeight)}
+			extraTicketResults[i] = extraTicketResult{true, int32(r.BlockHeight), int32(r.BlockKeyHeight)}
 			return nil
 		})
 	}
@@ -146,10 +147,12 @@ func (w *Wallet) LiveTicketHashes(chainClient *chain.RPCClient, includeImmature 
 			continue
 		}
 		// Same checks as above in the db view.
-		if confirmed(expiryConfs, r.height, tipHeight) {
+		if confirmed(expiryConfs, r.keyHeight, tipKeyHeight) {
 			continue
 		}
-		if !confirmed(int32(w.chainParams.TicketMaturity)+1, r.height, tipHeight) {
+
+
+		if !confirmed(int32(w.chainParams.TicketMaturity)+1, r.keyHeight, tipKeyHeight) {
 			if includeImmature {
 				ticketHashes = append(ticketHashes, extraTickets[i])
 			}
