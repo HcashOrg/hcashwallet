@@ -280,26 +280,30 @@ func (w *Wallet) onBlockConnected(serializedBlockHeader []byte, transactions [][
 	height := int32(blockHeader.Height)
 	chainTipChanges.NewHeight = height
 
+	isKeyBlock := false
+	hash := chainhash.HashH(serializedBlockHeader)
+	bits := udb.ExtractBlockHeaderBits(serializedBlockHeader)
+	keyHeight := udb.ExtractBlockHeaderKeyHeight(serializedBlockHeader)
+	realKeyHeight := keyHeight
+	heightDiff := keyHeight - prevKeyHeight
+	if blockchain.HashToBig(&hash).Cmp(blockchain.CompactToBig(uint32(bits))) <= 0 {
+		isKeyBlock = true
+		heightDiff++
+		realKeyHeight++
+	}
+
 	// Prune all expired transactions and all stake tickets that no longer
 	// meet the minimum stake difficulty.
 	err = walletdb.Update(w.db, func(dbtx walletdb.ReadWriteTx) error {
 		txmgrNs := dbtx.ReadWriteBucket(wtxmgrNamespaceKey)
-		return w.TxStore.PruneUnconfirmed(txmgrNs, height, blockHeader.SBits)
+		return w.TxStore.PruneUnconfirmed(txmgrNs, height, int64(realKeyHeight), blockHeader.SBits)
 	})
 	if err != nil {
 		log.Errorf("Failed to prune unconfirmed transactions when "+
 			"connecting block height %v: %s", height, err.Error())
 	}
 
-	isKeyBlock := false
-	hash := chainhash.HashH(serializedBlockHeader)
-	bits := udb.ExtractBlockHeaderBits(serializedBlockHeader)
-	keyHeight := udb.ExtractBlockHeaderKeyHeight(serializedBlockHeader)
-	heightDiff := keyHeight - prevKeyHeight
-	if blockchain.HashToBig(&hash).Cmp(blockchain.CompactToBig(uint32(bits))) <= 0 {
-		isKeyBlock = true
-		heightDiff++
-	}
+
 	chainTipChanges.IsKeyBlock = isKeyBlock
 	chainTipChanges.KeyIncrease = heightDiff
 	chainTipChanges.NewKeyHeight = keyHeight
@@ -983,6 +987,7 @@ func (w *Wallet) handleWinningTickets(blockHash *chainhash.Hash,
 		voteHash := &txRec.Hash
 		err = walletdb.Update(w.db, func(dbtx walletdb.ReadWriteTx) error {
 			err := w.processTransactionRecord(dbtx, txRec, nil, nil)
+
 			if err != nil {
 				return err
 			}
@@ -995,9 +1000,19 @@ func (w *Wallet) handleWinningTickets(blockHash *chainhash.Hash,
 			return err
 		})
 		if err != nil {
-			log.Errorf("Failed to send vote for ticket hash %v: %v",
-				ticketHashes[i], err)
-			continue
+			if apperrors.IsError(err, apperrors.ErrDoubleSpend){
+				log.Warnf("Double spend voting, just sending raw vote transaction")
+				_, errv := chainClient.SendRawTransaction(vote, true)
+				if errv != nil{
+					log.Errorf("Failed to send vote for ticket hash %v: %v",
+						ticketHashes[i], err)
+					continue
+				}
+			} else{
+				log.Errorf("Failed to send vote for ticket hash %v: %v",
+					ticketHashes[i], err)
+				continue
+			}
 		}
 		log.Infof("Voted on block %v (height %v) using ticket %v "+
 			"(vote hash: %v bits: %v)", blockHash, blockHeight,

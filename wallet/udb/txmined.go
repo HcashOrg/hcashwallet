@@ -881,7 +881,7 @@ func (s *Store) GetMainChainBlockHashes(ns walletdb.ReadBucket, startHash *chain
 
 // PruneUnconfirmed prunes old stake tickets that are below the current stake
 // difficulty or any unconfirmed transaction which is expired.
-func (s *Store) PruneUnconfirmed(ns walletdb.ReadWriteBucket, height int32, stakeDiff int64) error {
+func (s *Store) PruneUnconfirmed(ns walletdb.ReadWriteBucket, height int32, realKeyHeight, stakeDiff int64) error {
 	// Read all data before removing
 	var recs []*TxRecord
 	c := ns.NestedReadBucket(bucketUnmined).ReadCursor()
@@ -904,15 +904,14 @@ func (s *Store) PruneUnconfirmed(ns walletdb.ReadWriteBucket, height int32, stak
 	for _, rec := range recs {
 		switch {
 		// Remove expired transactions
-		case rec.MsgTx.Expiry != wire.NoExpiryValue && rec.MsgTx.Expiry <= uint32(height):
+		case rec.MsgTx.Expiry != wire.NoExpiryValue && rec.MsgTx.Expiry < uint32(realKeyHeight):
 		// Remove ticket purchases with a different current stake difficulty
 		case rec.TxType == stake.TxTypeSStx && rec.MsgTx.TxOut[0].Value != stakeDiff:
 		// Skip others
 		case rec.TxType == stake.TxTypeSSGen:
 			script := rec.MsgTx.TxOut[0].PkScript
-			voteHeight := binary.LittleEndian.Uint32(script[34:38])
-			//uint32(s.chainParams.CoinbaseMaturity)
-			if uint32(height) - uint32(voteHeight) < uint32(s.chainParams.CoinbaseMaturity) * uint32(s.chainParams.DifficultyRate) {
+			voteKeyHeight := binary.LittleEndian.Uint32(script[38:42])
+			if uint32(realKeyHeight) - uint32(voteKeyHeight) < uint32(s.chainParams.CoinbaseMaturity) {
 				continue
 			}
 

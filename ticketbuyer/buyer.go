@@ -823,7 +823,7 @@ func (t *TicketPurchaser) Purchase(height int64, keyHeight int64) (*PurchaseStat
 	}
 
 	// Ticket purchase requires 2 blocks to confirm
-	expiry := int32(int(height) + (t.ExpiryDelta() + 2) * int(t.wallet.ChainParams().DifficultyRate))
+	expiry := int32(int(keyHeight) + (t.ExpiryDelta() + 2))
 	hashes, purchaseErr := t.wallet.PurchaseTickets(0,
 		maxPriceAmt,
 		0, // 0 minconf is used so tickets can be bought from split outputs
