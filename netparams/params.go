@@ -21,9 +21,9 @@ type Params struct {
 // hcashd on the main network (wire.MainNet).
 var MainNetParams = Params{
 	Params:            &chaincfg.MainNetParams,
-	JSONRPCClientPort: "11009",
-	JSONRPCServerPort: "11010",
-	GRPCServerPort:    "11011",
+	JSONRPCClientPort: "14009",
+	JSONRPCServerPort: "14010",
+	GRPCServerPort:    "14011",
 }
 
 // TestNet2Params contains parameters specific running hcashwallet and

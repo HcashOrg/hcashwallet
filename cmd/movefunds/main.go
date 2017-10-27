@@ -132,7 +132,7 @@ func main() {
 
 	// 3. Check the config and parse ----------------------------------------------
 	switch cfg.Network {
-	case "testnet":
+	case "testnet2":
 		params = &chaincfg.TestNet2Params
 	case "testdata":
 		params = &chaincfg.MainNetParams
