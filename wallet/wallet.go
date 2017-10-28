@@ -2583,6 +2583,8 @@ func (w *Wallet) CalcPowSubsidy(from, count int) (*float64, error) {
 		// down to the genesis block.
 		return w.TxStore.RangeTransactions(txmgrNs, -1, 0, rangeFn)
 	})
+
+	amount = amount * hcashutil.Amount(w.chainParams.WorkRewardProportion) / hcashutil.Amount(w.chainParams.WorkRewardProportion + w.chainParams.BlockTaxProportion)
 	result := amount.ToCoin()
 	return &result, err
 }
