@@ -954,7 +954,7 @@ func (w *Wallet) purchaseTickets(req purchaseTicketRequest) ([]*chainhash.Hash, 
 	if err != nil {
 		return nil, err
 	}
-	if req.expiry <= tipHeight+1 && req.expiry > 0 {
+	if req.expiry <= tipKeyHeight + 1 && req.expiry > 0 {
 		return nil, fmt.Errorf("need expiry that is beyond next height ("+
 			"given: %v, next height %v)", req.expiry, tipHeight+1)
 	}
