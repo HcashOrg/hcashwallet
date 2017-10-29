@@ -7,7 +7,7 @@ import:
 - package: github.com/HcashOrg/bitset
   version: master
 - package: github.com/HcashOrg/hcashd
-  version: dev
+  version: master
   subpackages:
   - blockchain
   - blockchain/stake
@@ -18,7 +18,7 @@ import:
   - txscript
   - wire
 - package: github.com/HcashOrg/hcashrpcclient
-  version: dev
+  version: master
 - package: github.com/HcashOrg/hcashutil
   version: dev
   subpackages:
