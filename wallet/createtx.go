@@ -956,7 +956,7 @@ func (w *Wallet) purchaseTickets(req purchaseTicketRequest) ([]*chainhash.Hash, 
 	}
 	if req.expiry <= tipKeyHeight + 1 && req.expiry > 0 {
 		return nil, fmt.Errorf("need expiry that is beyond next height ("+
-			"given: %v, next height %v)", req.expiry, tipHeight+1)
+			"given: %v, next height %v)", req.expiry, tipKeyHeight+1)
 	}
 
 	// addrFunc returns a change address.
