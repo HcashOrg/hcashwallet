@@ -1,7 +1,6 @@
 # hcashwallet
 
-
-Hcashwallet is a daemon handling hcash wallet functionality for a single user.  
+Hcashwallet is a daemon handling hcash wallet functionality for a single user. 
 
 It acts as both an RPC client to hcashd and an RPC server for wallet clients and legacy RPC applications. It manages all of your accounts, addresses, and transactions and allows users to participate in Proof-of-Stake voting.
 
@@ -82,6 +81,10 @@ hcashctl --wallet sendtoaddress "[address]" [amount] [notSend]  //Send hcash fro
 hcashctl --wallet purchaseticket "[fromaccount]" spendlimit minconf "ticketaddress" "[numtickets]")   
 //Purchase tickets to participate in PoS process. Spendlimit denotes the limit on the amount to spend on ticket, minconf denotes the minimal required confirmation of the transaction(e.g. 1)
 ```
+
+## Using HcashWallet UI Version
+	HcashWallet UI version is a graphical wallet for HCASH. With it, you can send and receive HCASH, purchase tickets for PoS voting, get a history of all your transactions and more.
+	HcashWallet UI version is located here: https://github.com/HcashOrg/hcashwallet/releases. It could be extracted and used directly.
 
 ## License
 
