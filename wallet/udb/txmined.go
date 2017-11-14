@@ -174,17 +174,19 @@ type Store struct {
 
 // MainChainTip returns the hash and height of the currently marked tip-most
 // block of the main chain.
-func (s *Store) MainChainTip(ns walletdb.ReadBucket) (chainhash.Hash, int32) {
+func (s *Store) MainChainTip(ns walletdb.ReadBucket) (chainhash.Hash, int32, int32) {
 	var hash chainhash.Hash
 	tipHash := ns.Get(rootTipBlock)
 	copy(hash[:], tipHash)
 
 	header := ns.NestedReadBucket(bucketHeaders).Get(hash[:])
 	height := extractBlockHeaderHeight(header)
+	keyHeight := extractBlockHeaderKeyHeight(header)
 
-	return hash, height
+	return hash, height, keyHeight
 }
 
+/*
 func (s *Store)MainChainTipKeyHeight(ns walletdb.ReadBucket) (int32) {
 	var hash chainhash.Hash
 	tipHash := ns.Get(rootTipBlock)
@@ -201,6 +203,7 @@ func (s *Store)MainChainTipKeyHeight(ns walletdb.ReadBucket) (int32) {
 
 	return keyHeight
 }
+*/
 
 // ExtendMainChain inserts a block header into the database.  It must connect to
 // the existing tip block.
@@ -2305,7 +2308,7 @@ func (s *Store) UnspentOutpoints(ns walletdb.ReadBucket) ([]wire.OutPoint, error
 // is undefined.
 func (s *Store) UnspentTickets(dbtx walletdb.ReadTx, syncHeight int32, syncKeyHeight int32, includeImmature bool) ([]chainhash.Hash, error) {
 	ns := dbtx.ReadBucket(wtxmgrBucketKey)
-	tipBlock, _ := s.MainChainTip(ns)
+	tipBlock, _, _:= s.MainChainTip(ns)
 	var tickets []chainhash.Hash
 	c := ns.NestedReadBucket(bucketTickets).ReadCursor()
 	var hash chainhash.Hash
@@ -3717,9 +3720,9 @@ func (s *Store) AccountBalance(ns, addrmgrNs walletdb.ReadBucket, minConf int32,
 func (s *Store) AccountBalances(ns, addrmgrNs walletdb.ReadBucket,
 	minConf int32) (map[uint32]*Balances, error) {
 
-	_, syncHeight := s.MainChainTip(ns)
+	_, syncHeight, syncKeyHeight := s.MainChainTip(ns)
 
-	syncKeyHeight := s.MainChainTipKeyHeight(ns)
+	//syncKeyHeight := s.MainChainTipKeyHeight(ns)
 
 
 	return s.balanceFullScan(ns, addrmgrNs, minConf, syncHeight, syncKeyHeight)

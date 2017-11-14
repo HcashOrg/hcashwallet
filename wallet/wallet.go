@@ -717,19 +717,20 @@ func (w *Wallet) SynchronizingToNetwork() bool {
 
 // MainChainTip returns the hash and height of the tip-most block in the main
 // chain that the wallet is synchronized to.
-func (w *Wallet) MainChainTip() (hash chainhash.Hash, height int32) {
+func (w *Wallet) MainChainTip() (hash chainhash.Hash, height int32, keyHeight int32) {
 	// TODO: after the main chain tip is successfully updated in the db, it
 	// should be saved in memory.  This will speed up access to it, and means
 	// there won't need to be an ignored error here for ergonomic access to the
 	// hash and height.
 	walletdb.View(w.db, func(tx walletdb.ReadTx) error {
 		txmgrNs := tx.ReadBucket(wtxmgrNamespaceKey)
-		hash, height = w.TxStore.MainChainTip(txmgrNs)
+		hash, height, keyHeight = w.TxStore.MainChainTip(txmgrNs)
 		return nil
 	})
 	return
 }
 
+/*
 func (w *Wallet) MainChainTipKeyHeight() (keyHeight int32) {
 	// TODO: after the main chain tip is successfully updated in the db, it
 	// should be saved in memory.  This will speed up access to it, and means
@@ -743,6 +744,7 @@ func (w *Wallet) MainChainTipKeyHeight() (keyHeight int32) {
 	})
 	return
 }
+*/
 
 // loadActiveAddrs loads the consensus RPC server with active addresses for
 // transaction notifications.  For logging purposes, it returns the total number
@@ -974,7 +976,7 @@ func (w *Wallet) FetchHeaders(chainClient *chain.RPCClient) (count int, rescanFr
 		addrmgrNs := tx.ReadBucket(waddrmgrNamespaceKey)
 		txmgrNs := tx.ReadWriteBucket(wtxmgrNamespaceKey)
 
-		commonAncestor, commonAncestorHeight = w.TxStore.MainChainTip(txmgrNs)
+		commonAncestor, commonAncestorHeight, _ = w.TxStore.MainChainTip(txmgrNs)
 		hash, height := commonAncestor, commonAncestorHeight
 
 		for height != 0 {
@@ -1039,7 +1041,7 @@ func (w *Wallet) FetchHeaders(chainClient *chain.RPCClient) (count int, rescanFr
 				copy(commonAncestor[:], udb.ExtractBlockHeaderParentHash(header))
 				commonAncestorHeight--
 			}
-			mainChainTipBlockHash, mainChainTipBlockHeight = w.TxStore.MainChainTip(txmgrNs)
+			mainChainTipBlockHash, mainChainTipBlockHeight, _ = w.TxStore.MainChainTip(txmgrNs)
 
 			rescanStartHeight = commonAncestorHeight + 1
 			rescanStart, err = w.TxStore.GetMainChainBlockHashForHeight(
@@ -2408,8 +2410,8 @@ func (w *Wallet) ListTransactions(from, count int) ([]hcashjson.ListTransactions
 
 		// Get current block.  The block height used for calculating
 		// the number of tx confirmations.
-		_, tipHeight := w.TxStore.MainChainTip(txmgrNs)
-		tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
+		_, tipHeight, tipKeyHeight := w.TxStore.MainChainTip(txmgrNs)
+		//tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
 		// Need to skip the first from transactions, and after those, only
 		// include the next count transactions.
 		skipped := 0
@@ -2461,8 +2463,8 @@ func (w *Wallet) ListTxs(txType int, from, count int64) (hcashjson.ListTxsResult
 
 		// Get current block.  The block height used for calculating
 		// the number of tx confirmations.
-		_, tipHeight := w.TxStore.MainChainTip(txmgrNs)
-		tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
+		_, tipHeight, tipKeyHeight := w.TxStore.MainChainTip(txmgrNs)
+		//tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
 		// Need to skip the first from transactions, and after those, only
 		// include the next count transactions.
 		skipped := int64(0)
@@ -2531,7 +2533,7 @@ func (w *Wallet) CalcPowSubsidy(from, count int) (*float64, error) {
 	err := walletdb.View(w.db, func(tx walletdb.ReadTx) error {
 		txmgrNs := tx.ReadBucket(wtxmgrNamespaceKey)
 
-		_, tipHeight := w.TxStore.MainChainTip(txmgrNs)
+		_, tipHeight, _ := w.TxStore.MainChainTip(txmgrNs)
 		from = int(tipHeight) - from
 		// Get current block.  The block height used for calculating
 		// the number of tx confirmations.
@@ -2599,8 +2601,8 @@ func (w *Wallet) ListAddressTransactions(pkHashes map[string]struct{}) ([]hcashj
 
 		// Get current block.  The block height used for calculating
 		// the number of tx confirmations.
-		_, tipHeight := w.TxStore.MainChainTip(txmgrNs)
-		tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
+		_, tipHeight, tipKeyHeight := w.TxStore.MainChainTip(txmgrNs)
+		//tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
 		rangeFn := func(details []udb.TxDetails) (bool, error) {
 		loopDetails:
 			for i := range details {
@@ -2649,8 +2651,8 @@ func (w *Wallet) ListAllTransactions() ([]hcashjson.ListTransactionsResult, erro
 
 		// Get current block.  The block height used for calculating
 		// the number of tx confirmations.
-		_, tipHeight := w.TxStore.MainChainTip(txmgrNs)
-		tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
+		_, tipHeight, tipKeyHeight := w.TxStore.MainChainTip(txmgrNs)
+		//tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
 		rangeFn := func(details []udb.TxDetails) (bool, error) {
 			// Iterate over transactions at this height in reverse
 			// order.  This does nothing for unmined transactions,
@@ -2705,7 +2707,7 @@ func (w *Wallet) BlockInfo(blockID *BlockIdentifier) (*BlockInfo, error) {
 	var blockInfo *BlockInfo
 	err := walletdb.View(w.db, func(dbtx walletdb.ReadTx) error {
 		txmgrNs := dbtx.ReadBucket(wtxmgrNamespaceKey)
-		_, tipHeight := w.TxStore.MainChainTip(txmgrNs)
+		_, tipHeight, _ := w.TxStore.MainChainTip(txmgrNs)
 		blockHash := blockID.hash
 		if blockHash == nil {
 			hash, err := w.TxStore.GetBlockHash(txmgrNs, blockID.height)
@@ -2889,7 +2891,7 @@ func (w *Wallet) Accounts() (*AccountsResult, error) {
 		addrmgrNs := tx.ReadBucket(waddrmgrNamespaceKey)
 		txmgrNs := tx.ReadBucket(wtxmgrNamespaceKey)
 
-		tipHash, tipHeight = w.TxStore.MainChainTip(txmgrNs)
+		tipHash, tipHeight, _ = w.TxStore.MainChainTip(txmgrNs)
 		unspent, err := w.TxStore.UnspentOutputs(txmgrNs)
 		if err != nil {
 			return err
@@ -2985,8 +2987,8 @@ func (w *Wallet) ListUnspent(minconf, maxconf int32, addresses map[string]struct
 		addrmgrNs := tx.ReadBucket(waddrmgrNamespaceKey)
 		txmgrNs := tx.ReadBucket(wtxmgrNamespaceKey)
 
-		_, tipHeight := w.TxStore.MainChainTip(txmgrNs)
-		tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
+		_, tipHeight, tipKeyHeight:= w.TxStore.MainChainTip(txmgrNs)
+		//tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
 		filter := len(addresses) != 0
 		unspent, err := w.TxStore.UnspentOutputs(txmgrNs)
 		if err != nil {
@@ -3382,8 +3384,8 @@ func (w *Wallet) StakeInfo(isLiveTicketDetails bool, chainClient *hcashrpcclient
 	err := walletdb.View(w.db, func(dbtx walletdb.ReadTx) error {
 		addrmgrNs := dbtx.ReadBucket(waddrmgrNamespaceKey)
 		txmgrNs := dbtx.ReadBucket(wtxmgrNamespaceKey)
-		tipHash, tipHeight := w.TxStore.MainChainTip(txmgrNs)
-		tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
+		tipHash, tipHeight, tipKeyHeight := w.TxStore.MainChainTip(txmgrNs)
+		//tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
 		res.BlockHeight = int64(tipHeight)
 		it := w.TxStore.IterateTickets(dbtx)
 		for it.Next() {
@@ -3669,7 +3671,7 @@ func (w *Wallet) TotalReceivedForAccounts(minConf int32) ([]AccountTotalReceived
 		addrmgrNs := tx.ReadBucket(waddrmgrNamespaceKey)
 		txmgrNs := tx.ReadBucket(wtxmgrNamespaceKey)
 
-		_, tipHeight := w.TxStore.MainChainTip(txmgrNs)
+		_, tipHeight, _ := w.TxStore.MainChainTip(txmgrNs)
 
 		err := w.Manager.ForEachAccount(addrmgrNs, func(account uint32) error {
 			accountName, err := w.Manager.AccountName(addrmgrNs, account)
@@ -3734,7 +3736,7 @@ func (w *Wallet) TotalReceivedForAddr(addr hcashutil.Address, minConf int32) (hc
 	err := walletdb.View(w.db, func(tx walletdb.ReadTx) error {
 		txmgrNs := tx.ReadBucket(wtxmgrNamespaceKey)
 
-		_, tipHeight := w.TxStore.MainChainTip(txmgrNs)
+		_, tipHeight, _ := w.TxStore.MainChainTip(txmgrNs)
 
 		var (
 			addrStr    = addr.EncodeAddress()
@@ -4098,7 +4100,7 @@ func (w *Wallet) ChainParams() *chaincfg.Params {
 // should be performed to restore, per BIP0044, any generated accounts and
 // addresses from a restored seed.
 func (w *Wallet) NeedsAccountsSync() (bool, error) {
-	_, tipHeight := w.MainChainTip()
+	_, tipHeight, _ := w.MainChainTip()
 	if tipHeight != 0 {
 		return false, nil
 	}

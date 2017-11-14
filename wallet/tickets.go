@@ -75,8 +75,8 @@ func (w *Wallet) LiveTicketHashes(chainClient *chain.RPCClient, includeImmature 
 			extraTickets = extraTickets[:len(extraTickets)-1]
 		}
 
-		_, tipHeight = w.TxStore.MainChainTip(txmgrNs)
-		tipKeyHeight = w.TxStore.MainChainTipKeyHeight(txmgrNs)
+		_, tipHeight, tipKeyHeight = w.TxStore.MainChainTip(txmgrNs)
+		//tipKeyHeight = w.TxStore.MainChainTipKeyHeight(txmgrNs)
 
 		it := w.TxStore.IterateTickets(dbtx)
 		for it.Next() {
@@ -302,8 +302,8 @@ func (w *Wallet) RevokeTickets(chainClient *chain.RPCClient) error {
 	err := walletdb.View(w.db, func(tx walletdb.ReadTx) error {
 		ns := tx.ReadBucket(wtxmgrNamespaceKey)
 		var err error
-		tipHash, tipHeight = w.TxStore.MainChainTip(ns)
-		tipKeyHeight = w.TxStore.MainChainTipKeyHeight(ns)
+		tipHash, tipHeight, tipKeyHeight = w.TxStore.MainChainTip(ns)
+		//tipKeyHeight = w.TxStore.MainChainTipKeyHeight(ns)
 		ticketHashes, err = w.TxStore.UnspentTickets(tx, tipHeight, tipKeyHeight, false)
 		return err
 	})

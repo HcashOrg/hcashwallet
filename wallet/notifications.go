@@ -761,7 +761,7 @@ func (c *ConfirmationNotificationsClient) Watch(txHashes []*chainhash.Hash, stop
 	r := make([]ConfirmationNotification, 0, len(c.watched))
 	err := walletdb.View(w.db, func(dbtx walletdb.ReadTx) error {
 		txmgrNs := dbtx.ReadBucket(wtxmgrNamespaceKey)
-		_, tipHeight := w.TxStore.MainChainTip(txmgrNs)
+		_, tipHeight, _ := w.TxStore.MainChainTip(txmgrNs)
 		// cannot range here, txHashes may be modified
 		for i := 0; i < len(txHashes); {
 			h := txHashes[i]

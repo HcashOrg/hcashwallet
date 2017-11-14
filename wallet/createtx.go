@@ -190,8 +190,8 @@ func (w *Wallet) NewUnsignedTransaction(outputs []*wire.TxOut, relayFeePerKb hca
 	err := walletdb.View(w.db, func(dbtx walletdb.ReadTx) error {
 		addrmgrNs := dbtx.ReadBucket(waddrmgrNamespaceKey)
 		txmgrNs := dbtx.ReadBucket(wtxmgrNamespaceKey)
-		_, tipHeight := w.TxStore.MainChainTip(txmgrNs)
-		tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
+		_, tipHeight, tipKeyHeight := w.TxStore.MainChainTip(txmgrNs)
+		//tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
 
 
 
@@ -398,8 +398,8 @@ func (w *Wallet) txToOutputsInternal(outputs []*wire.TxOut, account uint32, notS
 		txmgrNs := dbtx.ReadBucket(wtxmgrNamespaceKey)
 
 		// Create the unsigned transaction.
-		_, tipHeight := w.TxStore.MainChainTip(txmgrNs)
-		tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
+		_, tipHeight, tipKeyHeight := w.TxStore.MainChainTip(txmgrNs)
+		//tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
 		inputSource := w.TxStore.MakeInputSource(txmgrNs, addrmgrNs, account,
 			minconf, tipHeight, tipKeyHeight)
 		persist := w.deferPersistReturnedChild(&changeSourceUpdates)
@@ -534,8 +534,8 @@ func (w *Wallet) txToMultisigInternal(dbtx walletdb.ReadWriteTx, account uint32,
 	}
 
 	// Get current block's height and hash.
-	_, topHeight := w.TxStore.MainChainTip(txmgrNs)
-	topKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
+	_, topHeight, topKeyHeight := w.TxStore.MainChainTip(txmgrNs)
+	//topKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
 
 	// Add in some extra for fees. TODO In the future, make a better
 	// fee estimator.
@@ -717,8 +717,8 @@ func (w *Wallet) compressWalletInternal(dbtx walletdb.ReadWriteTx, maxNumIns int
 	}
 
 	// Get current block's height
-	_, tipHeight := w.TxStore.MainChainTip(txmgrNs)
-	tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
+	_, tipHeight, tipKeyHeight := w.TxStore.MainChainTip(txmgrNs)
+	//tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
 
 	minconf := int32(1)
 	eligible, err := w.findEligibleOutputs(dbtx, account, minconf, tipHeight, tipKeyHeight)
@@ -947,8 +947,8 @@ func (w *Wallet) purchaseTickets(req purchaseTicketRequest) ([]*chainhash.Hash, 
 	var tipKeyHeight int32
 	err = walletdb.View(w.db, func(tx walletdb.ReadTx) error {
 		ns := tx.ReadBucket(wtxmgrNamespaceKey)
-		_, tipHeight = w.TxStore.MainChainTip(ns)
-		tipKeyHeight = w.TxStore.MainChainTipKeyHeight(ns)
+		_, tipHeight, tipKeyHeight = w.TxStore.MainChainTip(ns)
+		//tipKeyHeight = w.TxStore.MainChainTipKeyHeight(ns)
 		return nil
 	})
 	if err != nil {

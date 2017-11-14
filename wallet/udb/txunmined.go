@@ -70,7 +70,7 @@ func (s *Store) InsertMemPoolTx(ns walletdb.ReadWriteBucket, rec *TxRecord) erro
 					const str = "failed to determine voted block"
 					return apperrors.Wrap(err, apperrors.ErrData, str)
 				}
-				tipBlock, _ := s.MainChainTip(ns)
+				tipBlock, _, _ := s.MainChainTip(ns)
 				if votedBlock == tipBlock {
 					const str = "revocation double spends unmined vote on " +
 						"the tip block"

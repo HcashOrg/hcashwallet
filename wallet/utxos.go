@@ -34,7 +34,7 @@ func (w *Wallet) UnspentOutputs(policy OutputSelectionPolicy) ([]*TransactionOut
 		txmgrNs := tx.ReadBucket(wtxmgrNamespaceKey)
 
 		//_, tipHeight := w.TxStore.MainChainTip(txmgrNs)
-		tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
+		_, _, tipKeyHeight := w.TxStore.MainChainTip(txmgrNs)
 
 		// TODO: actually stream outputs from the db instead of fetching
 		// all of them at once.
@@ -111,8 +111,8 @@ func (w *Wallet) SelectInputs(targetAmount hcashutil.Amount, policy OutputSelect
 	err = walletdb.View(w.db, func(tx walletdb.ReadTx) error {
 		addrmgrNs := tx.ReadBucket(waddrmgrNamespaceKey)
 		txmgrNs := tx.ReadBucket(wtxmgrNamespaceKey)
-		_, tipHeight := w.TxStore.MainChainTip(txmgrNs)
-		tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
+		_, tipHeight, tipKeyHeight := w.TxStore.MainChainTip(txmgrNs)
+		//tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
 		if policy.Account != udb.ImportedAddrAccount {
 			lastAcct, err := w.Manager.LastAccount(addrmgrNs)
 			if err != nil {

@@ -637,7 +637,7 @@ func getBalance(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 		accountName = *cmd.Account
 	}
 
-	blockHash, _ := w.MainChainTip()
+	blockHash, _, _ := w.MainChainTip()
 	result := hcashjson.GetBalanceResult{
 		BlockHash: blockHash.String(),
 	}
@@ -694,10 +694,11 @@ func getBalance(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 // getBestBlock handles a getbestblock request by returning a JSON object
 // with the height and hash of the most recently processed block.
 func getBestBlock(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
-	hash, height := w.MainChainTip()
+	hash, height, keyHeight := w.MainChainTip()
 	result := &hcashjson.GetBestBlockResult{
 		Hash:   hash.String(),
 		Height: int64(height),
+		KeyHeight: int64(keyHeight),
 	}
 	return result, nil
 }
@@ -705,14 +706,14 @@ func getBestBlock(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 // getBestBlockHash handles a getbestblockhash request by returning the hash
 // of the most recently processed block.
 func getBestBlockHash(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
-	hash, _ := w.MainChainTip()
+	hash, _, _:= w.MainChainTip()
 	return hash.String(), nil
 }
 
 // getBlockCount handles a getblockcount request by returning the chain height
 // of the most recently processed block.
 func getBlockCount(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
-	_, height := w.MainChainTip()
+	_, height, _ := w.MainChainTip()
 	return height, nil
 }
 
@@ -1300,8 +1301,8 @@ func getTransaction(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 		return nil, &ErrNoTransactionInfo
 	}
 
-	_, tipHeight := w.MainChainTip()
-	tipKeyHeight := w.MainChainTipKeyHeight()
+	_, tipHeight, tipKeyHeight := w.MainChainTip()
+	//tipKeyHeight := w.MainChainTipKeyHeight()
 	// TODO: The serialized transaction is already in the DB, so
 	// reserializing can be avoided here.
 	var txBuf bytes.Buffer
@@ -1660,7 +1661,7 @@ func listReceivedByAddress(icmd interface{}, w *wallet.Wallet) (interface{}, err
 		tx []string
 	}
 
-	_, tipHeight := w.MainChainTip()
+	_, tipHeight, _ := w.MainChainTip()
 
 	// Intermediate data for all addresses.
 	allAddrData := make(map[string]AddrData)
@@ -1739,8 +1740,8 @@ func listReceivedByAddress(icmd interface{}, w *wallet.Wallet) (interface{}, err
 func listSinceBlock(icmd interface{}, w *wallet.Wallet, chainClient *chain.RPCClient) (interface{}, error) {
 	cmd := icmd.(*hcashjson.ListSinceBlockCmd)
 
-	_, tipHeight := w.MainChainTip()
-	tipKeyHeight := w.MainChainTipKeyHeight()
+	_, tipHeight, tipKeyHeight := w.MainChainTip()
+	//tipKeyHeight := w.MainChainTipKeyHeight()
 	targetConf := int64(*cmd.TargetConfirmations)
 
 	// For the result we need the block hash for the last block counted
@@ -2601,8 +2602,8 @@ func sendToSStx(icmd interface{}, w *wallet.Wallet, chainClient *chain.RPCClient
 		pair[k] = hcashutil.Amount(v)
 	}
 	// Get current block's height.
-	_, tipHeight := w.MainChainTip()
-	tipKeyHeight := w.MainChainTipKeyHeight()
+	_, tipHeight, tipKeyHeight := w.MainChainTip()
+	//tipKeyHeight := w.MainChainTipKeyHeight()
 
 	usedEligible := []udb.Credit{}
 	eligible, err := w.FindEligibleOutputs(account, minconf, tipHeight, tipKeyHeight)

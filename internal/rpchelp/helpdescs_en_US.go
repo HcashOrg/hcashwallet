@@ -567,6 +567,7 @@ var helpDescsEnUS = map[string]string{
 	// GetBestBlockResult help.
 	"getbestblockresult-hash":   "The hash of the block",
 	"getbestblockresult-height": "The blockchain height of the block",
+	"getbestblockresult-keyheight": "The blockchain key height of the block",
 
 	// GetUnconfirmedBalanceCmd help.
 	"getunconfirmedbalance--synopsis": "Calculates the unspent output value of all unmined transaction outputs for an account.",

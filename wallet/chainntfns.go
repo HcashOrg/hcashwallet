@@ -160,7 +160,7 @@ func (w *Wallet) switchToSideChain(dbtx walletdb.ReadWriteTx) (*MainTipChangedNo
 
 	sideChainForkHeight := sideChain[0].headerData.SerializedHeader.Height()
 
-	_, tipHeight := w.TxStore.MainChainTip(txmgrNs)
+	_, tipHeight, _ := w.TxStore.MainChainTip(txmgrNs)
 
 	chainTipChanges := &MainTipChangedNotification{
 		AttachedBlocks: make([]*chainhash.Hash, len(sideChain)),
@@ -217,7 +217,7 @@ func copyHeaderSliceToArray(array *udb.RawBlockHeader, slice []byte) error {
 // blockconnected notifications.
 func (w *Wallet) onBlockConnected(serializedBlockHeader []byte, transactions [][]byte) error {
 	var blockHeader wire.BlockHeader
-	var prevKeyHeight = w.MainChainTipKeyHeight()
+	_, _, prevKeyHeight := w.MainChainTip()
 	err := blockHeader.Deserialize(bytes.NewReader(serializedBlockHeader))
 	if err != nil {
 		return err
