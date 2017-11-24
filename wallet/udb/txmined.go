@@ -1918,6 +1918,7 @@ func (s *Store) rollback(ns walletdb.ReadWriteBucket, addrmgrNs walletdb.ReadBuc
 					return err
 				}
 
+				removedCredits[string(k)] = v
 				err = deleteRawCredit(ns, k)
 				if err != nil {
 					return err
