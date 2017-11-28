@@ -1,5 +1,5 @@
-hash: 7f45ccb929ee1286cf989e942c71e0618b578a428e58454bcbd46fdff4815b90
-updated: 2017-10-10T03:26:24.657649457Z
+hash: c072c39ed5209ac1af39139d2a6125a3d1fb2acf52409e7fdf30dcfe473c07dd
+updated: 2017-11-28T21:10:49.842619017+08:00
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -13,6 +13,23 @@ imports:
   version: 4720035b7bfd2a9bb130b1c184f8bbe41b6f0d0f
   subpackages:
   - socks
+- name: github.com/btcsuite/goleveldb
+  version: 7834afc9e8cd15233b6c3d97e12674a31ca24602
+  subpackages:
+  - leveldb
+  - leveldb/cache
+  - leveldb/comparer
+  - leveldb/errors
+  - leveldb/filter
+  - leveldb/iterator
+  - leveldb/journal
+  - leveldb/memdb
+  - leveldb/opt
+  - leveldb/storage
+  - leveldb/table
+  - leveldb/util
+- name: github.com/btcsuite/snappy-go
+  version: 0bdef8d067237991ddaa1bb6072a740bc40601ba
 - name: github.com/btcsuite/websocket
   version: 31079b6807923eb23992c421b114992b95131b55
 - name: github.com/dchest/blake256
@@ -28,7 +45,7 @@ imports:
 - name: github.com/HcashOrg/bitset
   version: 3b5f0c752dfbeeda856fd6af60e997257ca399fc
 - name: github.com/HcashOrg/hcashd
-  version: 3e9e8f2a281a8b43e143f971e774b0b713f0c88e
+  version: 5ff596283dd01586c94e6a4b5a00b5f63a228ab3
   subpackages:
   - blockchain
   - blockchain/internal/dbnamespace
@@ -41,6 +58,8 @@ imports:
   - chaincfg/chainec
   - chaincfg/chainhash
   - database
+  - database/ffldb
+  - database/internal/treap
   - hcashec/edwards
   - hcashec/secp256k1
   - hcashec/secp256k1/schnorr
@@ -48,9 +67,9 @@ imports:
   - txscript
   - wire
 - name: github.com/HcashOrg/hcashrpcclient
-  version: 6fa250370b6e0a5af9640e7d0adaede9426d643a
+  version: 10a6a2003c21f36a846afb600ebbbfe00831b01b
 - name: github.com/HcashOrg/hcashutil
-  version: b0144e1f9f6ed8ffb3493a5c33650e2b6b837f17
+  version: 5d9d38730c6f9eb3eceb4543ccc6c5f86c7e85f9
   subpackages:
   - base58
   - hdkeychain
@@ -61,7 +80,7 @@ imports:
   subpackages:
   - rotator
 - name: golang.org/x/crypto
-  version: 9419663f5a44be8b34ca85f08abc5fe1be11f8a3
+  version: 365904b0f3154c6e11a9cf541c9803d1dca0445a
   subpackages:
   - nacl/secretbox
   - pbkdf2
@@ -101,11 +120,14 @@ imports:
   subpackages:
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: f92cdcd7dcdc69e81b2d7b338479a19a8723cfa3
+  version: 5a9f7b402fe85096d2e1d0383435ee1876e863d0
   subpackages:
+  - balancer
+  - balancer/roundrobin
   - codes
   - connectivity
   - credentials
+  - encoding
   - grpclb/grpc_lb_v1/messages
   - grpclog
   - internal
@@ -113,6 +135,9 @@ imports:
   - metadata
   - naming
   - peer
+  - resolver
+  - resolver/dns
+  - resolver/passthrough
   - stats
   - status
   - tap
