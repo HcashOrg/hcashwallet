@@ -20,6 +20,8 @@ import:
 - package: github.com/HcashOrg/hcashrpcclient
   version: master
 - package: github.com/HcashOrg/hcashutil
+  version: master
+- package: github.com/HcashOrg/hcashutil
   version: dev
   subpackages:
   - hdkeychain
