@@ -236,7 +236,7 @@ func (w *Wallet) NewUnsignedTransaction(outputs []*wire.TxOut, relayFeePerKb hca
 
 		var err error
 		authoredTx, err = txauthor.NewUnsignedTransaction(outputs, relayFeePerKb,
-			inputSource, changeSource)
+			inputSource, changeSource, udb.AcctypeEc)
 		return err
 	})
 	if err != nil {
@@ -390,13 +390,25 @@ func (w *Wallet) txToOutputs(outputs []*wire.TxOut, account uint32, notSend int3
 // btcwallet does.
 func (w *Wallet) txToOutputsInternal(outputs []*wire.TxOut, account uint32, notSend int32, minconf int32, chainClient *chain.RPCClient,
 	randomizeChangeIdx bool, txFee hcashutil.Amount) (*txauthor.AuthoredTx, error) {
+		//acountprop,err := w.Manager.AccountProperties()
+		//if err == nil {
+		//	acountpr
+		//}
 
 	var atx *txauthor.AuthoredTx
 	var changeSourceUpdates []func(walletdb.ReadWriteTx) error
 	err := walletdb.View(w.db, func(dbtx walletdb.ReadTx) error {
 		addrmgrNs := dbtx.ReadBucket(waddrmgrNamespaceKey)
 		txmgrNs := dbtx.ReadBucket(wtxmgrNamespaceKey)
-
+		// Get account type
+		accprop, err := w.Manager.AccountProperties(addrmgrNs, account)
+		if err != nil {
+			return err
+		}
+		accType := accprop.AccountType
+		if accType != udb.AcctypeEc && accType != udb.AcctypeBliss {
+			return errors.New("unsupport type!!")
+		}
 		// Create the unsigned transaction.
 		_, tipHeight, tipKeyHeight := w.TxStore.MainChainTip(txmgrNs)
 		//tipKeyHeight := w.TxStore.MainChainTipKeyHeight(txmgrNs)
@@ -404,9 +416,9 @@ func (w *Wallet) txToOutputsInternal(outputs []*wire.TxOut, account uint32, notS
 			minconf, tipHeight, tipKeyHeight)
 		persist := w.deferPersistReturnedChild(&changeSourceUpdates)
 		changeSource := w.changeSource(persist, account)
-		var err error
+		//TODO: change the accType param to accType instead of udb.AccTypeEc
 		atx, err = txauthor.NewUnsignedTransaction(outputs, txFee,
-			inputSource.SelectInputs, changeSource)
+			inputSource.SelectInputs, changeSource, accType)
 		if err != nil {
 			return err
 		}
@@ -1891,7 +1903,7 @@ func createUnsignedRevocation(ticketHash *chainhash.Hash, ticketPurchase *wire.M
 	// Revocations must pay a fee but do so by decreasing one of the output
 	// values instead of increasing the input value and using a change output.
 	// Calculate the estimated signed serialize size.
-	sizeEstimate := txsizes.EstimateSerializeSize(1, revocation.TxOut, false)
+	sizeEstimate := txsizes.EstimateSerializeSize(1, revocation.TxOut, false, udb.AcctypeEc)
 	feeEstimate := txrules.FeeForSerializeSize(feePerKB, sizeEstimate)
 
 	// Reduce the output value of one of the outputs to accomodate for the relay

@@ -165,29 +165,31 @@ func (a *managedAddress) ExportPubKey() string {
 // compressed.
 func newManagedAddressWithoutPrivKey(m *Manager, account uint32, pubKey chainec.PublicKey, compressed bool) (*managedAddress, error) {
 	// Create a pay-to-pubkey-hash address from the public key.
+	//TODO
 	var pubKeyHash []byte
-	if compressed {
-		pubKeyHash = hcashutil.Hash160(pubKey.SerializeCompressed())
+	if compressed && pubKey.GetType() == chainec.ECTypeSecp256k1 {
+	   pubKeyHash = hcashutil.Hash160(pubKey.SerializeCompressed())
+	} else if pubKey.GetType() == chainec.ECTypeSecp256k1 {
+	   pubKeyHash = hcashutil.Hash160(pubKey.SerializeUncompressed())
 	} else {
-		pubKeyHash = hcashutil.Hash160(pubKey.SerializeUncompressed())
+	   pubKeyHash = hcashutil.Hash160(pubKey.Serialize())
 	}
 	address, err := hcashutil.NewAddressPubKeyHash(pubKeyHash, m.chainParams,
-		chainec.ECTypeSecp256k1)
+	   pubKey.GetType())
 	if err != nil {
-		return nil, err
+	   return nil, err
 	}
-
 	return &managedAddress{
-		manager:    m,
-		address:    address,
-		account:    account,
-		imported:   false,
-		internal:   false,
-		multisig:   false,
-		compressed: compressed,
-		pubKey:     pubKey,
+	   manager:    m,
+	   address:    address,
+	   account:    account,
+	   imported:   false,
+	   internal:   false,
+	   multisig:   false,
+	   compressed: compressed,
+	   pubKey:     pubKey,
 	}, nil
-}
+ }
 
 // newManagedAddressFromExtKey returns a new managed address based on the passed
 // account and extended key.  The managed address will have access to the

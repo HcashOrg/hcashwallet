@@ -163,7 +163,7 @@ func (l *Loader) CreateNewWallet(pubPassphrase, privPassphrase, seed []byte) (w 
 
 	// Open the newly-created wallet.
 	so := l.stakeOptions
-	w, err = wallet.Open(db, pubPassphrase, so.VotingEnabled, so.AddressReuse,
+	w, err = wallet.Open(db, pubPassphrase, privPassphrase, so.VotingEnabled, so.AddressReuse,
 		so.TicketAddress, so.PoolAddress, so.PoolFees, so.TicketFee,
 		l.addrIdxScanLen, so.StakePoolColdExtKey, l.allowHighFees,
 		l.relayFee, l.chainParams)
@@ -180,7 +180,7 @@ func (l *Loader) CreateNewWallet(pubPassphrase, privPassphrase, seed []byte) (w 
 // and the public passphrase.  If the loader is being called by a context where
 // standard input prompts may be used during wallet upgrades, setting
 // canConsolePrompt will enable these prompts.
-func (l *Loader) OpenExistingWallet(pubPassphrase []byte) (w *wallet.Wallet, rerr error) {
+func (l *Loader) OpenExistingWallet(pubPassphrase []byte, privPassphrase []byte) (w *wallet.Wallet, rerr error) {
 	defer l.mu.Unlock()
 	l.mu.Lock()
 
@@ -206,7 +206,7 @@ func (l *Loader) OpenExistingWallet(pubPassphrase []byte) (w *wallet.Wallet, rer
 	}()
 
 	so := l.stakeOptions
-	w, err = wallet.Open(db, pubPassphrase, so.VotingEnabled, so.AddressReuse,
+	w, err = wallet.Open(db, pubPassphrase, privPassphrase, so.VotingEnabled, so.AddressReuse,
 		so.TicketAddress, so.PoolAddress, so.PoolFees, so.TicketFee,
 		l.addrIdxScanLen, so.StakePoolColdExtKey, l.allowHighFees,
 		l.relayFee, l.chainParams)

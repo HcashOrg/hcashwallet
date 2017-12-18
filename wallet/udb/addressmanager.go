@@ -48,6 +48,8 @@ const (
 	// DefaultAccountNum is the number of the default account.
 	DefaultAccountNum = 0
 
+	DefaultBlissAccountNum = 1
+	BlissAccountName = "postquantum"
 	// defaultAccountName is the initial name of the default account.  Note
 	// that the default account may be renamed and is not a reserved name,
 	// so the default account might not be named "default" and non-default
@@ -83,6 +85,10 @@ const (
 	// saltSize is the number of bytes of the salt used when hashing
 	// private passphrases.
 	saltSize = 32
+
+	AcctypeEc 		uint8 = 0
+	AcctypeBliss    uint8 = 1
+	AcctypeMSS      uint8 = 2
 )
 
 var (
@@ -158,7 +164,7 @@ var defaultScryptOptions = ScryptOptions{
 // when the address manager is locked.
 type accountInfo struct {
 	acctName string
-
+	acctType uint8
 	// The account key is used to derive the branches which in turn derive
 	// the internal and external addresses.
 	// The accountKeyPriv will be nil when the address manager is locked.
@@ -174,6 +180,7 @@ type accountInfo struct {
 type AccountProperties struct {
 	AccountNumber             uint32
 	AccountName               string
+	AccountType               uint8
 	LastUsedExternalIndex     uint32
 	LastUsedInternalIndex     uint32
 	LastReturnedExternalIndex uint32
@@ -433,7 +440,9 @@ func deriveKey(acctInfo *accountInfo, branch, index uint32, private bool) (*hdke
 	if private {
 		acctKey = acctInfo.acctKeyPriv
 	}
-
+	if acctKey.GetAlgType() == AcctypeBliss && !private {
+		return nil, fmt.Errorf("failed to derive extended branch key for bliss")
+	}
 	// Derive and return the key.
 	branchKey, err := acctKey.Child(branch)
 	if err != nil {
@@ -484,7 +493,9 @@ func (m *Manager) GetMasterPubkey(ns walletdb.ReadBucket, account uint32) (strin
 func (m *Manager) loadAccountInfo(ns walletdb.ReadBucket, account uint32) (*accountInfo, error) {
 	// Return the account info from cache if it's available.
 	if acctInfo, ok := m.acctInfo[account]; ok {
-		return acctInfo, nil
+		if acctInfo.acctType == AcctypeEc {
+			return acctInfo, nil
+		}
 	}
 
 	// The account is either invalid or just wasn't cached, so attempt to
@@ -512,10 +523,10 @@ func (m *Manager) loadAccountInfo(ns walletdb.ReadBucket, account uint32) (*acco
 	// of the fields are filled out below.
 	acctInfo := &accountInfo{
 		acctName:         row.name,
+		acctType:         row.acctType,
 		acctKeyEncrypted: row.privKeyEncrypted,
 		acctKeyPub:       acctKeyPub,
 	}
-
 	if !m.locked {
 		// Use the crypto private key to decrypt the account private
 		// extended keys.
@@ -570,6 +581,7 @@ func (m *Manager) AccountProperties(ns walletdb.ReadBucket, account uint32) (*Ac
 			return nil, err
 		}
 		props.AccountName = acctInfo.acctName
+		props.AccountType = acctInfo.acctType
 		row, err := fetchAccountInfo(ns, account, DBVersion)
 		if err != nil {
 			return nil, err
@@ -579,6 +591,7 @@ func (m *Manager) AccountProperties(ns walletdb.ReadBucket, account uint32) (*Ac
 		props.LastReturnedExternalIndex = row.lastReturnedExternalIndex
 		props.LastReturnedInternalIndex = row.lastReturnedInternalIndex
 	} else {
+		//TODO
 		props.AccountName = ImportedAddrAccountName // reserved, nonchangable
 
 		// Could be more efficient if this was tracked by the db.
@@ -614,14 +627,63 @@ func (m *Manager) AccountExtendedPubKey(dbtx walletdb.ReadTx, account uint32) (*
 	return acctInfo.acctKeyPub, nil
 }
 
+func (m *Manager) AccountExtendedPrivKey(dbtx walletdb.ReadTx, account uint32) (*hdkeychain.ExtendedKey, error) {
+	ns := dbtx.ReadBucket(waddrmgrBucketKey)
+	if account == ImportedAddrAccount {
+		const str = "the imported account does not contain an extended key"
+		return nil, apperrors.E{ErrorCode: apperrors.ErrInvalidAccount, Description: str, Err: nil}
+	}
+	m.mtx.Lock()
+	acctInfo, err := m.loadAccountInfo(ns, account)
+	m.mtx.Unlock()
+	if err != nil {
+		return nil, err
+	}
+	if !m.locked {
+		return acctInfo.acctKeyPriv, nil
+	}
+
+	return nil, fmt.Errorf("wallet is locked")
+}
+
 // AccountBranchExtendedPubKey returns the extended public key of an account's
 // branch, which then can be used to derive addresses belonging to the account.
+func (m *Manager) AccountBranchExtendedPrivKey(dbtx walletdb.ReadTx, account, branch uint32) (*hdkeychain.ExtendedKey, error) {
+	if m.locked {
+		return nil, fmt.Errorf("wallet is locked")
+	}
+	acctXpriv, err := m.AccountExtendedPrivKey(dbtx, account)
+	if err != nil {
+		return nil, err
+	}
+	branchXpriv, err := acctXpriv.Child(branch)
+
+	if err != nil {
+		const str = "failed to derive child xpriv"
+		return nil, apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
+	}
+	defer acctXpriv.Zero()
+	return branchXpriv, nil
+}
+
 func (m *Manager) AccountBranchExtendedPubKey(dbtx walletdb.ReadTx, account, branch uint32) (*hdkeychain.ExtendedKey, error) {
+	var branchXpub *hdkeychain.ExtendedKey
 	acctXpub, err := m.AccountExtendedPubKey(dbtx, account)
 	if err != nil {
 		return nil, err
 	}
-	branchXpub, err := acctXpub.Child(branch)
+	acctXpriv, err := m.AccountExtendedPrivKey(dbtx, account)
+	if acctXpriv.GetAlgType() == AcctypeEc {
+		branchXpub, err = acctXpub.Child(branch)
+	} else if acctXpriv.GetAlgType() == AcctypeBliss {
+		branchXpriv, err := acctXpriv.Child(branch)
+		acctXpriv.Zero()
+		if err != nil {
+			return nil, err
+		}
+		branchXpub, err = branchXpriv.Neuter()
+		branchXpriv.Zero()
+	}
 	if err != nil {
 		const str = "failed to derive child xpub"
 		return nil, apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
@@ -629,11 +691,14 @@ func (m *Manager) AccountBranchExtendedPubKey(dbtx walletdb.ReadTx, account, bra
 	return branchXpub, nil
 }
 
+
+
+
 // CoinTypePrivKey returns the coin type private key at the BIP0044 path
 // m/44'/<coin type>' (coin type child indexes differ by the network).  The key
 // and all derived private keys should be cleared by the caller when finished.
 // This method requires the wallet to be unlocked.
-func (m *Manager) CoinTypePrivKey(dbtx walletdb.ReadTx) (*hdkeychain.ExtendedKey, error) {
+func (m *Manager)  CoinTypePrivKey(dbtx walletdb.ReadTx) (*hdkeychain.ExtendedKey, error) {
 	defer m.mtx.RUnlock()
 	m.mtx.RLock()
 
@@ -1116,7 +1181,7 @@ func (m *Manager) ImportPrivateKey(ns walletdb.ReadWriteBucket, wif *hcashutil.W
 
 	// Save the new imported address to the db and update start block (if
 	// needed) in a single transaction.
-	err = putImportedAddress(ns, pubKeyHash, ImportedAddrAccount, ssNone,
+	err = putImportedAddress(ns, pubKeyHash, ImportedAddrAccount, SSNone,
 		encryptedPubKey, encryptedPrivKey)
 	if err != nil {
 		return nil, err
@@ -1186,7 +1251,7 @@ func (m *Manager) ImportScript(ns walletdb.ReadWriteBucket, script []byte) (Mana
 	// Save the new imported address to the db and update start block (if
 	// needed) in a single transaction.
 	err = putScriptAddress(ns, scriptHash, ImportedAddrAccount,
-		ssNone, encryptedHash, encryptedScript)
+		SSNone, encryptedHash, encryptedScript)
 	if err != nil {
 		return nil, maybeConvertDbError(err)
 	}
@@ -1376,7 +1441,7 @@ func (m *Manager) MarkUsed(ns walletdb.ReadWriteBucket, address hcashutil.Addres
 
 	row = bip0044AccountInfo(row.pubKeyEncrypted, row.privKeyEncrypted, 0, 0,
 		lastUsedExtIndex, lastUsedIntIndex, lastRetExtIndex, lastRetIntIndex,
-		row.name, DBVersion)
+		row.name, row.acctType, DBVersion)
 	return putAccountRow(ns, bip0044Addr.account, &row.dbAccountRow)
 }
 
@@ -1415,7 +1480,7 @@ func (m *Manager) MarkUsedChildIndex(tx walletdb.ReadWriteTx, account, branch, c
 
 	row = bip0044AccountInfo(row.pubKeyEncrypted, row.privKeyEncrypted, 0, 0,
 		lastUsedExtIndex, lastUsedIntIndex, lastRetExtIndex, lastRetIntIndex,
-		row.name, DBVersion)
+		row.name, row.acctType, DBVersion)
 	return putAccountRow(ns, account, &row.dbAccountRow)
 }
 
@@ -1450,7 +1515,7 @@ func (m *Manager) MarkReturnedChildIndex(tx walletdb.ReadWriteTx, account, branc
 
 	row = bip0044AccountInfo(row.pubKeyEncrypted, row.privKeyEncrypted, 0, 0,
 		row.lastUsedExternalIndex, row.lastUsedInternalIndex,
-		lastRetExtIndex, lastRetIntIndex, row.name, DBVersion)
+		lastRetExtIndex, lastRetIntIndex, row.name, row.acctType, DBVersion)
 	return putAccountRow(ns, account, &row.dbAccountRow)
 }
 
@@ -1490,17 +1555,36 @@ func (m *Manager) syncAccountToAddrIndex(ns walletdb.ReadWriteBucket, account ui
 	var xpubBranch, xprivBranch *hdkeychain.ExtendedKey
 	switch branch {
 	case ExternalBranch, InternalBranch:
-		xpubBranch, err = acctInfo.acctKeyPub.Child(branch)
+		if acctInfo.acctType == AcctypeEc {
+			xpubBranch, err = acctInfo.acctKeyPub.Child(branch)
+		} else if acctInfo.acctType == AcctypeBliss {
+
+		} else {
+			const str = "unknown account type"
+			return apperrors.E{ErrorCode: apperrors.ErrInvalidAccount, Description: str, Err: err}
+		}
 		if err != nil {
 			const str = "failed to derive branch xpub"
 			return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
 		}
 		if m.locked {
-			break
+			if acctInfo.acctType == AcctypeEc {
+				break
+			} else {
+				const str = "failed to derive branch key when wallet is unlocked"
+				return apperrors.E{ErrorCode: apperrors.ErrLocked, Description: str, Err: err}
+			}
 		}
 		xprivBranch, err = acctInfo.acctKeyPriv.Child(branch)
 		if err != nil {
 			const str = "failed to derive branch xpriv"
+			return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
+		}
+		if acctInfo.acctType == AcctypeBliss {
+			xpubBranch, err = xprivBranch.Neuter()
+		}
+		if err != nil {
+			const str = "failed to derive branch xpub"
 			return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
 		}
 		defer xprivBranch.Zero()
@@ -1525,34 +1609,67 @@ func (m *Manager) syncAccountToAddrIndex(ns walletdb.ReadWriteBucket, account ui
 	// been recorded.  As soon as any already-saved address is found, the loop
 	// can end, because we know that all addresses before that child have also
 	// been created.
-	for child := syncToIndex; ; child-- {
-		xpubChild, err := xpubBranch.Child(child)
-		if err == hdkeychain.ErrInvalidChild {
-			continue
-		}
-		if err != nil {
-			const str = "failed to derive child xpub"
-			return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
-		}
-		// This can't error as only good input is passed to
-		// hcashutil.NewAddressPubKeyHash.
-		addr, _ := xpubChild.Address(m.chainParams)
-		_, err = fetchAddress(ns, addr.Hash160()[:])
-		if err == nil {
-			// address was found and there are no more to generate
-			break
+	if acctInfo.acctType == AcctypeEc {
+		for child := syncToIndex; ; child-- {
+			xpubChild, err := xpubBranch.Child(child)
+			if err == hdkeychain.ErrInvalidChild {
+				continue
+			}
+			if err != nil {
+				const str = "failed to derive child xpub"
+				return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
+			}
+			// This can't error as only good input is passed to
+			// hcashutil.NewAddressPubKeyHash.
+			addr, _ := xpubChild.Address(m.chainParams, AcctypeEc)
+			_, err = fetchAddress(ns, addr.Hash160()[:])
+			if err == nil {
+				// address was found and there are no more to generate
+				break
+			}
+
+			err = putChainedAddress(ns, addr, account, SSFull, branch, child)
+			if err != nil {
+				return err
+			}
+
+			if child == 0 {
+				break
+			}
 		}
 
-		err = putChainedAddress(ns, addr.Hash160()[:], account, ssFull, branch, child)
-		if err != nil {
-			return err
-		}
+	}
+	if acctInfo.acctType == AcctypeBliss {
+		for child := syncToIndex; ; child-- {
+			xprivChild, err := xprivBranch.Child(child)
+			xpubChild, err := xprivChild.Neuter()
+			if err == hdkeychain.ErrInvalidChild {
+				continue
+			}
+			if err != nil {
+				const str = "failed to derive child xpub"
+				return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
+			}
+			// This can't error as only good input is passed to
+			// hcashutil.NewAddressPubKeyHash.
+			addr, _ := xpubChild.Address(m.chainParams, AcctypeBliss)
+			//Question
 
-		if child == 0 {
-			break
+			_, err = fetchAddress(ns, addr.Hash160()[:])
+			if err == nil {
+				// address was found and there are no more to generate
+				break
+			}
+			err = putChainedAddress(ns, addr, account, SSFull, branch, child)
+			if err != nil {
+				return err
+			}
+
+			if child == 0 {
+				break
+			}
 		}
 	}
-
 	return nil
 }
 
@@ -1590,7 +1707,7 @@ func ValidateAccountName(name string) error {
 // ErrDuplicateAccount will be returned.  Since creating a new account requires
 // access to the cointype keys (from which extended account keys are derived),
 // it requires the manager to be unlocked.
-func (m *Manager) NewAccount(ns walletdb.ReadWriteBucket, name string) (uint32, error) {
+func (m *Manager) NewAccount(ns walletdb.ReadWriteBucket, name string, acctype uint8) (uint32, error) {
 	if m.watchingOnly {
 		return 0, managerError(apperrors.ErrWatchingOnly, errWatchingOnly, nil)
 	}
@@ -1643,7 +1760,7 @@ func (m *Manager) NewAccount(ns walletdb.ReadWriteBucket, name string) (uint32, 
 	}
 
 	// Derive the account key using the cointype key
-	acctKeyPriv, err := deriveAccountKey(coinTypeKeyPriv, account)
+	acctKeyPriv, err := deriveAccountKey(coinTypeKeyPriv, account, acctype)
 	coinTypeKeyPriv.Zero()
 	if err != nil {
 		str := "failed to convert private key for account"
@@ -1678,14 +1795,14 @@ func (m *Manager) NewAccount(ns walletdb.ReadWriteBucket, name string) (uint32, 
 	// We have the encrypted account extended keys, so save them to the
 	// database
 	row := bip0044AccountInfo(acctPubEnc, acctPrivEnc, 0, 0,
-		^uint32(0), ^uint32(0), ^uint32(0), ^uint32(0), name, DBVersion)
+		^uint32(0), ^uint32(0), ^uint32(0), ^uint32(0), name, acctype, DBVersion)
 	err = putAccountInfo(ns, account, row)
 	if err != nil {
 		return 0, err
 	}
 
 	// Save last account metadata
-	if err := putLastAccount(ns, account); err != nil {
+	if err := PutLastAccount(ns, account); err != nil {
 		return 0, err
 	}
 
@@ -1732,7 +1849,7 @@ func (m *Manager) RenameAccount(ns walletdb.ReadWriteBucket, account uint32, nam
 	row = bip0044AccountInfo(row.pubKeyEncrypted, row.privKeyEncrypted,
 		0, 0, row.lastUsedExternalIndex, row.lastUsedInternalIndex,
 		row.lastReturnedExternalIndex, row.lastReturnedInternalIndex,
-		name, DBVersion)
+		name, row.acctType, DBVersion)
 	err = putAccountInfo(ns, account, row)
 	if err != nil {
 		return err
@@ -2118,15 +2235,15 @@ func deriveCoinTypeKey(masterNode *hdkeychain.ExtendedKey,
 // In particular this is the hierarchical deterministic extended key path:
 //   m/44'/<coin type>'/<account>'
 func deriveAccountKey(coinTypeKey *hdkeychain.ExtendedKey,
-	account uint32) (*hdkeychain.ExtendedKey, error) {
+	account uint32, acctype uint8) (*hdkeychain.ExtendedKey, error) {
 	// Enforce maximum account number.
 	if account > MaxAccountNum {
 		err := managerError(apperrors.ErrAccountNumTooHigh, errAcctTooHigh, nil)
 		return nil, err
 	}
-
 	// Derive the account key as a child of the coin type key.
-	return coinTypeKey.Child(account + hdkeychain.HardenedKeyStart)
+	acctKeyPriv, err := coinTypeKey.SwitchChild(account + hdkeychain.HardenedKeyStart, acctype)
+	return acctKeyPriv, err
 }
 
 // checkBranchKeys ensures deriving the extended keys for the internal and
@@ -2281,7 +2398,7 @@ func createAddressManager(ns walletdb.ReadWriteBucket, seed, pubPassphrase, priv
 		defer coinTypeKeyPriv.Zero()
 
 		// Derive the account key for the first account according to BIP0044.
-		acctKeyPriv, err := deriveAccountKey(coinTypeKeyPriv, 0)
+		acctKeyPriv, err := deriveAccountKey(coinTypeKeyPriv, 0, 0)
 		if err != nil {
 			// The seed is unusable if the any of the children in the
 			// required hierarchy can't be derived due to invalid child.
@@ -2315,6 +2432,36 @@ func createAddressManager(ns walletdb.ReadWriteBucket, seed, pubPassphrase, priv
 			return managerError(apperrors.ErrKeyChain, str, err)
 		}
 
+	/*
+		// Derive the account key for the bliss account.
+		blissacctKeyPriv, err := deriveAccountKey(coinTypeKeyPriv, 1, 1)
+		if err != nil {
+			if err == hdkeychain.ErrInvalidChild {
+				str := "failed to create bliss account"
+				return managerError(apperrors.ErrKeyChain, str,
+					hdkeychain.ErrUnusableSeed)
+			}
+
+			return err
+		}
+
+		if err := checkBranchKeys(blissacctKeyPriv); err != nil {
+			// The seed is unusable if the any of the children in the
+			// required hierarchy can't be derived due to invalid child.
+			if err == hdkeychain.ErrInvalidChild {
+				str := "the provided seed is unusable"
+				return managerError(apperrors.ErrKeyChain, str,
+					hdkeychain.ErrUnusableSeed)
+			}
+
+			return err
+		}
+		blissacctKeyPub, err := blissacctKeyPriv.Neuter()
+		if err != nil {
+			str := "failed to convert private key for account 1"
+			return managerError(apperrors.ErrKeyChain, str, err)
+		}
+	*/
 		// Generate new master keys.  These master keys are used to protect the
 		// crypto keys that will be generated next.
 		masterKeyPub, err := newSecretKey(&pubPassphrase, config)
@@ -2426,7 +2573,28 @@ func createAddressManager(ns walletdb.ReadWriteBucket, seed, pubPassphrase, priv
 			str := "failed to encrypt private key for account 0"
 			return managerError(apperrors.ErrCrypto, str, err)
 		}
-
+		/*
+		bpes, err := blissacctKeyPub.String()
+		if err != nil {
+			str := "failed to convert public key string for account 1"
+			return managerError(apperrors.ErrKeyChain, str, err)
+		}
+		blissacctPubEnc, err := cryptoKeyPub.Encrypt([]byte(bpes))
+		if err != nil {
+			str := "failed to encrypt public key for account 1"
+			return managerError(apperrors.ErrCrypto, str, err)
+		}
+		bpes, err = blissacctKeyPriv.String()
+		if err != nil {
+			str := "failed to convert private key string for account 1"
+			return managerError(apperrors.ErrKeyChain, str, err)
+		}
+		blissacctPrivEnc, err := cryptoKeyPriv.Encrypt([]byte(bpes))
+		if err != nil {
+			str := "failed to encrypt private key for account 1"
+			return managerError(apperrors.ErrCrypto, str, err)
+		}
+		*/
 		// Save the master key params to the database.
 		pubParams := masterKeyPub.Marshal()
 		privParams := masterKeyPriv.Marshal()
@@ -2464,20 +2632,36 @@ func createAddressManager(ns walletdb.ReadWriteBucket, seed, pubPassphrase, priv
 		if err != nil {
 			return err
 		}
-
+		/*
+		err = putNextToUseAddrPoolIdx(ns, false, DefaultBlissAccountNum, 0)
+		if err != nil {
+			return err
+		}
+		err = putNextToUseAddrPoolIdx(ns, true, DefaultBlissAccountNum, 0)
+		if err != nil {
+			return err
+		}
+		*/
 		// Save the information for the imported account to the database.  Even
 		// though the imported account is a special and restricted account, the
 		// database used a BIP0044 row type for it.
 		importedRow := bip0044AccountInfo(nil, nil, 0, 0, 0, 0, 0, 0,
-			ImportedAddrAccountName, initialVersion)
+			ImportedAddrAccountName, 0, initialVersion)
 		err = putAccountInfo(ns, ImportedAddrAccount, importedRow)
 		if err != nil {
 			return err
 		}
-
+		/*
+		blissRow := bip0044AccountInfo(blissacctPubEnc, blissacctPrivEnc, 0, 0, 0, 0, 0, 0,
+			BlissAccountName, 1, initialVersion)
+		err = putAccountInfo(ns, DefaultBlissAccountNum, blissRow)
+		if err != nil {
+			return err
+		}
+		*/
 		// Save the information for the default account to the database.
 		defaultRow := bip0044AccountInfo(acctPubEnc, acctPrivEnc, 0, 0, 0, 0, 0, 0,
-			defaultAccountName, initialVersion)
+			defaultAccountName,  0, initialVersion)
 		return putAccountInfo(ns, DefaultAccountNum, defaultRow)
 	}()
 	if err != nil {
@@ -2671,7 +2855,7 @@ func createWatchOnly(ns walletdb.ReadWriteBucket, hdPubKey string,
 
 	// Save the information for the imported account to the database.
 	importedRow := bip0044AccountInfo(nil, nil, 0, 0, 0, 0, 0, 0,
-		ImportedAddrAccountName, initialVersion)
+		ImportedAddrAccountName, 0, initialVersion)
 	err = putAccountInfo(ns, ImportedAddrAccount, importedRow)
 	if err != nil {
 		return err
@@ -2679,6 +2863,35 @@ func createWatchOnly(ns walletdb.ReadWriteBucket, hdPubKey string,
 
 	// Save the information for the default account to the database.
 	defaultRow := bip0044AccountInfo(acctPubEnc, acctPrivEnc, 0, 0, 0, 0, 0, 0,
-		defaultAccountName, initialVersion)
+		defaultAccountName, 0,initialVersion)
 	return putAccountInfo(ns, DefaultAccountNum, defaultRow)
+}
+
+
+func (m *Manager) LoadBlissAddrs(ns walletdb.ReadBucket, account, branch, start, count uint32) ([]hcashutil.Address, error) {
+	addresses := make([]hcashutil.Address, 0, count)
+	var err error
+	addresses, err = fetchBlissAddresses(ns, account, branch, start, count)
+	if err != nil {
+		return  nil, err
+	}
+	return addresses, nil
+}
+
+func (m *Manager) LoadBlissAddr(ns walletdb.ReadBucket, account, branch, index uint32) (*hcashutil.AddressPubKeyHash, error) {
+	blissaddr := fetchBlissAddress(ns, account, branch, index)
+	blisspubkeyaddrstr := string(blissaddr)
+	if blisspubkeyaddrstr == "" {
+		return nil, fmt.Errorf("address not found")
+	}
+	pubkeyhash, err := hcashutil.DecodeAddress(blisspubkeyaddrstr)
+	if err != nil {
+		return nil, err
+	}
+	addr, ok := pubkeyhash.(*hcashutil.AddressPubKeyHash)
+
+	if !ok {
+		return nil, fmt.Errorf("wrong rawaddr type error")
+	}
+	return addr, nil
 }

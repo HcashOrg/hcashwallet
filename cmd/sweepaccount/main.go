@@ -23,6 +23,7 @@ import (
 	"github.com/HcashOrg/hcashwallet/wallet/txrules"
 	"github.com/jessevdk/go-flags"
 	"golang.org/x/crypto/ssh/terminal"
+	"github.com/HcashOrg/hcashwallet/wallet/udb"
 )
 
 var (
@@ -269,7 +270,7 @@ func sweep() error {
 		inputSource := makeInputSource(previousOutputs)
 		destinationSource := makeDestinationScriptSource(rpcClient, opts.DestinationAccount)
 		tx, err := txauthor.NewUnsignedTransaction(nil, opts.FeeRate.Amount,
-			inputSource, destinationSource)
+			inputSource, destinationSource, udb.AcctypeEc)
 		if err != nil {
 			if err != (noInputValue{}) {
 				reportError("Failed to create unsigned transaction: %v", err)

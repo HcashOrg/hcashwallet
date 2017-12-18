@@ -123,10 +123,24 @@ func walletMain() error {
 				break
 			}
 		}
-
+		fmt.Println(cfg.Pass)
+		if cfg.Pass == "" {
+			os.Stdout.Sync()
+			for {
+				reader := bufio.NewReader(os.Stdin)
+				passphrase, err = prompt.PassPrompt(reader, "Enter priv wallet passphrase", false)
+				if err != nil {
+					fmt.Println("Failed to input password. Please try again.")
+					continue
+				}
+				break
+			}
+		} else {
+			passphrase = []byte(cfg.Pass)
+		}
 		// Load the wallet database.  It must have been created already
 		// or this will return an appropriate error.
-		w, err := loader.OpenExistingWallet(walletPass)
+		w, err := loader.OpenExistingWallet(walletPass, passphrase)
 		if err != nil {
 			log.Errorf("Open failed: %v", err)
 			return err
@@ -141,20 +155,20 @@ func walletMain() error {
 		//
 		// Until then, since --noinitialload users are expecting to use
 		// the wallet only over RPC, disable this feature for them.
-		if !cfg.NoInitialLoad {
-			if cfg.Pass != "" {
-				passphrase = []byte(cfg.Pass)
-				w.SetInitiallyUnlocked(true)
-				var unlockAfter <-chan time.Time
-				err = w.Unlock(passphrase, unlockAfter)
-				if err != nil {
-					log.Errorf("Incorrect passphrase in pass config setting.")
-					return err
-				}
-			} else {
-				passphrase = startPromptPass(w)
-			}
-		}
+		//if !cfg.NoInitialLoad {
+			//if cfg.Pass != "" {
+			//	passphrase = []byte(cfg.Pass)
+			w.SetInitiallyUnlocked(true)
+			//	var unlockAfter <-chan time.Time
+			//	err = w.Unlock(passphrase, unlockAfter)
+			//	if err != nil {
+			//		log.Errorf("Incorrect passphrase in pass config setting.")
+			//		return err
+			//	}
+			//} else {
+			//	passphrase = startPromptPass(w)
+			//}
+		//}
 	}
 
 	// Create and start HTTP server to serve wallet client connections.
@@ -169,6 +183,7 @@ func walletMain() error {
 	// Create and start chain RPC client so it's ready to connect to
 	// the wallet when loaded later.
 	if !cfg.NoInitialLoad {
+
 		go rpcClientConnectLoop(passphrase, legacyRPCServer, loader)
 	}
 
@@ -303,7 +318,6 @@ func startPromptPass(w *wallet.Wallet) []byte {
 // methods.
 func rpcClientConnectLoop(passphrase []byte, legacyRPCServer *legacyrpc.Server, loader *ldr.Loader) {
 	certs := readCAFile()
-
 	for {
 		chainClient, err := startChainRPC(certs)
 		if err != nil {
@@ -311,7 +325,6 @@ func rpcClientConnectLoop(passphrase []byte, legacyRPCServer *legacyrpc.Server, 
 			time.Sleep(30 * time.Second)
 			continue
 		}
-
 		// Rather than inlining this logic directly into the loader
 		// callback, a function variable is used to avoid running any of
 		// this after the client disconnects by setting it to nil.  This
@@ -357,12 +370,11 @@ func rpcClientConnectLoop(passphrase []byte, legacyRPCServer *legacyrpc.Server, 
 			if loadedWallet.ShuttingDown() {
 				return
 			}
-
 			// TODO: Rework the wallet so changing the RPC client
 			// does not require stopping and restarting everything.
 			loadedWallet.Stop()
 			loadedWallet.WaitForShutdown()
-			loadedWallet.Start()
+			loadedWallet.ReconnectStart()
 		}
 	}
 }
@@ -393,7 +405,7 @@ func readCAFile() []byte {
 func startChainRPC(certs []byte) (*chain.RPCClient, error) {
 	log.Infof("Attempting RPC client connection to %v", cfg.RPCConnect)
 	rpcc, err := chain.NewRPCClient(activeNet.Params, cfg.RPCConnect,
-		cfg.DcrdUsername, cfg.DcrdPassword, certs, cfg.DisableClientTLS, 0)
+		cfg.HcashdUsername, cfg.HcashdPassword, certs, cfg.DisableClientTLS, 0)
 	if err != nil {
 		return nil, err
 	}

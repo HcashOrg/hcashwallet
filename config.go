@@ -120,8 +120,8 @@ type config struct {
 	RPCConnect       string                  `short:"c" long:"rpcconnect" description:"Hostname/IP and port of hcashd RPC server to connect to"`
 	CAFile           *cfgutil.ExplicitString `long:"cafile" description:"File containing root certificates to authenticate a TLS connections with hcashd"`
 	DisableClientTLS bool                    `long:"noclienttls" description:"Disable TLS for the RPC client -- NOTE: This is only allowed if the RPC client is connecting to localhost"`
-	DcrdUsername     string                  `long:"hcashdusername" description:"Username for hcashd authentication"`
-	DcrdPassword     string                  `long:"hcashdpassword" default-mask:"-" description:"Password for hcashd authentication"`
+	HcashdUsername     string                  `long:"hcashdusername" description:"Username for hcashd authentication"`
+	HcashdPassword     string                  `long:"hcashdpassword" default-mask:"-" description:"Password for hcashd authentication"`
 	Proxy            string                  `long:"proxy" description:"Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)"`
 	ProxyUser        string                  `long:"proxyuser" description:"Username for proxy server"`
 	ProxyPass        string                  `long:"proxypass" default-mask:"-" description:"Password for proxy server"`
@@ -883,11 +883,11 @@ func loadConfig() (*config, []string, error) {
 	// the client.  The two settings were previously shared for hcashd and
 	// client auth, so this avoids breaking backwards compatibility while
 	// allowing users to use different auth settings for hcashd and wallet.
-	if cfg.DcrdUsername == "" {
-		cfg.DcrdUsername = cfg.Username
+	if cfg.HcashdUsername == "" {
+		cfg.HcashdUsername = cfg.Username
 	}
-	if cfg.DcrdPassword == "" {
-		cfg.DcrdPassword = cfg.Password
+	if cfg.HcashdPassword == "" {
+		cfg.HcashdPassword = cfg.Password
 	}
 
 	// Warn if user still has an old ticket buyer configuration file.

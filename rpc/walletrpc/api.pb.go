@@ -787,6 +787,7 @@ func (m *RescanResponse) GetRescannedThrough() int32 {
 type NextAccountRequest struct {
 	Passphrase  []byte `protobuf:"bytes,1,opt,name=passphrase,proto3" json:"passphrase,omitempty"`
 	AccountName string `protobuf:"bytes,2,opt,name=account_name,json=accountName" json:"account_name,omitempty"`
+	AccountType uint8  `protobuf:"varint,3,opt,name=accout_type,json=accounttype" json:"account_type,omitempty"`
 }
 
 func (m *NextAccountRequest) Reset()                    { *m = NextAccountRequest{} }

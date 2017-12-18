@@ -65,7 +65,7 @@ const (
 // upgrades maps between old database versions and the upgrade function to
 // upgrade the database to the next version.  Note that there was never a
 // version zero so upgrades[0] is nil.
-var upgrades = [...]func(walletdb.ReadWriteTx, []byte) error{
+var upgrades = [...]func(walletdb.ReadWriteTx, []byte, []byte) error{
 	lastUsedAddressIndexVersion - 1: lastUsedAddressIndexUpgrade,
 	votingPreferencesVersion - 1:    votingPreferencesUpgrade,
 	noEncryptedSeedVersion - 1:      noEncryptedSeedUpgrade,
@@ -73,7 +73,7 @@ var upgrades = [...]func(walletdb.ReadWriteTx, []byte) error{
 	ticketBucketVersion - 1:         ticketBucketUpgrade,
 }
 
-func lastUsedAddressIndexUpgrade(tx walletdb.ReadWriteTx, publicPassphrase []byte) error {
+func lastUsedAddressIndexUpgrade(tx walletdb.ReadWriteTx, publicPassphrase, privatePassphrase []byte) error {
 	const oldVersion = 1
 	const newVersion = 2
 
@@ -97,14 +97,19 @@ func lastUsedAddressIndexUpgrade(tx walletdb.ReadWriteTx, publicPassphrase []byt
 		return apperrors.E{ErrorCode: apperrors.ErrUpgrade, Description: str, Err: nil}
 	}
 
-	masterKeyPubParams, _, err := fetchMasterKeyParams(addrmgrBucket)
+	masterKeyPubParams, masterKeyPrivParams, err := fetchMasterKeyParams(addrmgrBucket)
 	if err != nil {
 		return err
 	}
-	var masterKeyPub snacl.SecretKey
+	var masterKeyPub, masterKeyPriv snacl.SecretKey
 	err = masterKeyPub.Unmarshal(masterKeyPubParams)
 	if err != nil {
 		const str = "failed to unmarshal master public key parameters"
+		return apperrors.E{ErrorCode: apperrors.ErrData, Description: str, Err: err}
+	}
+	err = masterKeyPriv.Unmarshal(masterKeyPrivParams)
+	if err != nil {
+		const str = "failed to unmarshal master private key parameters"
 		return apperrors.E{ErrorCode: apperrors.ErrData, Description: str, Err: err}
 	}
 	err = masterKeyPub.DeriveKey(&publicPassphrase)
@@ -112,8 +117,12 @@ func lastUsedAddressIndexUpgrade(tx walletdb.ReadWriteTx, publicPassphrase []byt
 		str := "invalid passphrase for master public key"
 		return apperrors.E{ErrorCode: apperrors.ErrWrongPassphrase, Description: str, Err: nil}
 	}
-
-	cryptoPubKeyEnc, _, _, err := fetchCryptoKeys(addrmgrBucket)
+	err = masterKeyPriv.DeriveKey(&privatePassphrase)
+	if err != nil {
+		str := "invalid passphrase for master private key"
+		return apperrors.E{ErrorCode: apperrors.ErrWrongPassphrase, Description: str, Err: nil}
+	}
+	cryptoPubKeyEnc, cryptoPrivKeyEnc, _, err := fetchCryptoKeys(addrmgrBucket)
 	if err != nil {
 		return err
 	}
@@ -122,8 +131,15 @@ func lastUsedAddressIndexUpgrade(tx walletdb.ReadWriteTx, publicPassphrase []byt
 		const str = "failed to decrypt public data crypto key using master key"
 		return apperrors.E{ErrorCode: apperrors.ErrCrypto, Description: str, Err: err}
 	}
+	cryptoPrivKeyCT, err := masterKeyPriv.Decrypt(cryptoPrivKeyEnc)
+	if err != nil {
+		const str = "failed to decrypt private data crypto key using master key"
+		return apperrors.E{ErrorCode: apperrors.ErrCrypto, Description: str, Err: err}
+	}
 	cryptoPubKey := &cryptoKey{snacl.CryptoKey{}}
+	cryptoPrivKey := &cryptoKey{snacl.CryptoKey{}}
 	copy(cryptoPubKey.CryptoKey[:], cryptoPubKeyCT)
+	copy(cryptoPrivKey.CryptoKey[:], cryptoPrivKeyCT)
 
 	// Determine how many BIP0044 accounts have been created.  Each of these
 	// accounts must be updated.
@@ -147,20 +163,45 @@ func lastUsedAddressIndexUpgrade(tx walletdb.ReadWriteTx, publicPassphrase []byt
 			const str = "failed to decrypt extended public key"
 			return apperrors.E{ErrorCode: apperrors.ErrCrypto, Description: str, Err: err}
 		}
+		serializedKeyPriv, err := cryptoPrivKey.Decrypt(row.privKeyEncrypted)
+		if err != nil {
+			const str = "failed to decrypt extended private key"
+			return apperrors.E{ErrorCode: apperrors.ErrCrypto, Description: str, Err: err}
+		}
 		xpub, err := hdkeychain.NewKeyFromString(string(serializedKeyPub))
 		if err != nil {
 			const str = "failed to create extended public key"
 			return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
 		}
-		xpubExtBranch, err := xpub.Child(ExternalBranch)
+		xpriv, err := hdkeychain.NewKeyFromString(string(serializedKeyPriv))
 		if err != nil {
-			const str = "failed to derive external branch extended public key"
+			const str = "failed to create extended private key"
 			return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
 		}
-		xpubIntBranch, err := xpub.Child(InternalBranch)
-		if err != nil {
-			const str = "failed to derive internal branch extended public key"
-			return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
+		var xpubExtBranch, xprivExtBranch, xpubIntBranch, xprivIntBranch *hdkeychain.ExtendedKey
+		if xpub.GetAlgType() == AcctypeEc {
+			xpubExtBranch, err = xpub.Child(ExternalBranch)
+			if err != nil {
+				const str = "failed to derive external branch extended public key"
+				return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
+			}
+			xpubIntBranch, err = xpub.Child(InternalBranch)
+			if err != nil {
+				const str = "failed to derive internal branch extended public key"
+				return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
+			}
+		}
+		if xpub.GetAlgType() == AcctypeBliss {
+			xprivExtBranch, err = xpriv.Child(ExternalBranch)
+			if err != nil {
+				const str = "failed to derive external branch extended private key"
+				return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
+			}
+			xprivIntBranch, err = xpriv.Child(InternalBranch)
+			if err != nil {
+				const str = "failed to derive internal branch extended private key"
+				return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
+			}
 		}
 
 		// Determine the last used internal and external address indexes.  The
@@ -168,20 +209,39 @@ func lastUsedAddressIndexUpgrade(tx walletdb.ReadWriteTx, publicPassphrase []byt
 		lastUsedExtIndex := ^uint32(0)
 		lastUsedIntIndex := ^uint32(0)
 		for child := uint32(0); child < hdkeychain.HardenedKeyStart; child++ {
-			xpubChild, err := xpubExtBranch.Child(child)
-			if err == hdkeychain.ErrInvalidChild {
-				continue
+			var xpubChild, xprivChild *hdkeychain.ExtendedKey
+			if xpub.GetAlgType() == AcctypeEc {
+				xpubChild, err = xpubExtBranch.Child(child)
+				if err == hdkeychain.ErrInvalidChild {
+					continue
+				}
+				if err != nil {
+					const str = "unexpected error deriving child key"
+					return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
+				}
 			}
-			if err != nil {
-				const str = "unexpected error deriving child key"
-				return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
+			if xpub.GetAlgType() == AcctypeBliss {
+				xprivChild, err = xprivExtBranch.Child(child)
+				if err == hdkeychain.ErrInvalidChild {
+					continue
+				}
+				if err != nil {
+					const str = "unexpected error deriving child key"
+					return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
+				}
+				xpubChild, err = xprivChild.Neuter()
+				if err != nil {
+					const str = "unexpected error deriving child key"
+					return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
+				}
 			}
+
 			// This can't error because the function always passes good input to
 			// hcashutil.NewAddressPubKeyHash.  Also, while it looks like a
 			// mistake to hardcode the mainnet parameters here, it doesn't make
 			// any difference since only the pubkey hash is used.  (Why is there
 			// no exported method to just return the serialized public key?)
-			addr, _ := xpubChild.Address(&chaincfg.MainNetParams)
+			addr, _ := xpubChild.Address(&chaincfg.MainNetParams, xpubChild.GetAlgType())
 			if addressBucket.Get(addressKey(addr.Hash160()[:])) == nil {
 				// No more recorded addresses for this account.
 				break
@@ -192,15 +252,33 @@ func lastUsedAddressIndexUpgrade(tx walletdb.ReadWriteTx, publicPassphrase []byt
 		}
 		for child := uint32(0); child < hdkeychain.HardenedKeyStart; child++ {
 			// Same as above but search the internal branch.
-			xpubChild, err := xpubIntBranch.Child(child)
-			if err == hdkeychain.ErrInvalidChild {
-				continue
+			var xpubChild, xprivChild *hdkeychain.ExtendedKey
+			if xpub.GetAlgType() == AcctypeEc {
+				xpubChild, err = xpubIntBranch.Child(child)
+				if err == hdkeychain.ErrInvalidChild {
+					continue
+				}
+				if err != nil {
+					const str = "unexpected error deriving child key"
+					return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
+				}
 			}
-			if err != nil {
-				const str = "unexpected error deriving child key"
-				return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
+			if xpub.GetAlgType() == AcctypeBliss {
+				xprivChild, err = xprivIntBranch.Child(child)
+				if err == hdkeychain.ErrInvalidChild {
+					continue
+				}
+				if err != nil {
+					const str = "unexpected error deriving child key"
+					return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
+				}
+				xpubChild, err = xprivChild.Neuter()
+				if err != nil {
+					const str = "unexpected error deriving child key"
+					return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}
+				}
 			}
-			addr, _ := xpubChild.Address(&chaincfg.MainNetParams)
+			addr, _ := xpubChild.Address(&chaincfg.MainNetParams, xpubChild.GetAlgType())
 			if addressBucket.Get(addressKey(addr.Hash160()[:])) == nil {
 				break
 			}
@@ -212,7 +290,7 @@ func lastUsedAddressIndexUpgrade(tx walletdb.ReadWriteTx, publicPassphrase []byt
 		// Convert account row values to the new serialization format that
 		// replaces the next to use indexes with the last used indexes.
 		row = bip0044AccountInfo(row.pubKeyEncrypted, row.privKeyEncrypted,
-			0, 0, lastUsedExtIndex, lastUsedIntIndex, 0, 0, row.name, newVersion)
+			0, 0, lastUsedExtIndex, lastUsedIntIndex, 0, 0, row.name, row.acctType, newVersion)
 		err = putAccountInfo(addrmgrBucket, account, row)
 		if err != nil {
 			return err
@@ -241,7 +319,7 @@ func lastUsedAddressIndexUpgrade(tx walletdb.ReadWriteTx, publicPassphrase []byt
 	return unifiedDBMetadata{}.putVersion(metadataBucket, newVersion)
 }
 
-func votingPreferencesUpgrade(tx walletdb.ReadWriteTx, publicPassphrase []byte) error {
+func votingPreferencesUpgrade(tx walletdb.ReadWriteTx, publicPassphrase, privatePassphrase []byte) error {
 	const oldVersion = 2
 	const newVersion = 3
 
@@ -289,7 +367,7 @@ func votingPreferencesUpgrade(tx walletdb.ReadWriteTx, publicPassphrase []byte) 
 	return unifiedDBMetadata{}.putVersion(metadataBucket, newVersion)
 }
 
-func noEncryptedSeedUpgrade(tx walletdb.ReadWriteTx, publicPassphrase []byte) error {
+func noEncryptedSeedUpgrade(tx walletdb.ReadWriteTx, publicPassphrase, privatePassphrase []byte) error {
 	const oldVersion = 3
 	const newVersion = 4
 
@@ -317,7 +395,7 @@ func noEncryptedSeedUpgrade(tx walletdb.ReadWriteTx, publicPassphrase []byte) er
 	return unifiedDBMetadata{}.putVersion(metadataBucket, newVersion)
 }
 
-func lastReturnedAddressUpgrade(tx walletdb.ReadWriteTx, publicPassphrase []byte) error {
+func lastReturnedAddressUpgrade(tx walletdb.ReadWriteTx, publicPassphrase, privatePassphrase []byte) error {
 	const oldVersion = 4
 	const newVersion = 5
 
@@ -347,7 +425,7 @@ func lastReturnedAddressUpgrade(tx walletdb.ReadWriteTx, publicPassphrase []byte
 		row = bip0044AccountInfo(row.pubKeyEncrypted, row.privKeyEncrypted,
 			0, 0, row.lastUsedExternalIndex, row.lastUsedInternalIndex,
 			row.lastUsedExternalIndex, row.lastUsedInternalIndex,
-			row.name, newVersion)
+			row.name, row.acctType, newVersion)
 		return putAccountInfo(addrmgrBucket, account, row)
 	}
 
@@ -379,7 +457,7 @@ func lastReturnedAddressUpgrade(tx walletdb.ReadWriteTx, publicPassphrase []byte
 	return unifiedDBMetadata{}.putVersion(metadataBucket, newVersion)
 }
 
-func ticketBucketUpgrade(tx walletdb.ReadWriteTx, publicPassphrase []byte) error {
+func ticketBucketUpgrade(tx walletdb.ReadWriteTx, publicPassphrase, privatePassphrase []byte) error {
 	const oldVersion = 5
 	const newVersion = 6
 
@@ -461,7 +539,7 @@ func ticketBucketUpgrade(tx walletdb.ReadWriteTx, publicPassphrase []byte) error
 
 // Upgrade checks whether the any upgrades are necessary before the database is
 // ready for application usage.  If any are, they are performed.
-func Upgrade(db walletdb.DB, publicPassphrase []byte) error {
+func Upgrade(db walletdb.DB, publicPassphrase, privPhrasePassphrase []byte) error {
 	var version uint32
 	err := walletdb.View(db, func(tx walletdb.ReadTx) error {
 		var err error
@@ -494,7 +572,7 @@ func Upgrade(db walletdb.DB, publicPassphrase []byte) error {
 	err = walletdb.Update(db, func(tx walletdb.ReadWriteTx) error {
 		// Execute all necessary upgrades in order.
 		for _, upgrade := range upgrades[version:] {
-			err := upgrade(tx, publicPassphrase)
+			err := upgrade(tx, publicPassphrase, privPhrasePassphrase)
 			if err != nil {
 				return err
 			}

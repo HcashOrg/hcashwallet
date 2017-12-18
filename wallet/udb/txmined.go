@@ -3362,10 +3362,6 @@ func (s *Store) MakeInputSource(ns, addrmgrNs walletdb.ReadBucket, account uint3
 func (s *Store) balanceFullScan(ns, addrmgrNs walletdb.ReadBucket, minConf int32,
 	syncHeight int32, syncKeyHeight int32) (map[uint32]*Balances, error) {
 
-
-
-
-
 	accountBalances := make(map[uint32]*Balances)
 	err := ns.NestedReadBucket(bucketUnspent).ForEach(func(k, v []byte) error {
 		if existsRawUnminedInput(ns, k) != nil {

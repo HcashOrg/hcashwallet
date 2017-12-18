@@ -408,7 +408,7 @@ func createUnsignedRevocation(ticketHash *chainhash.Hash, ticketPurchase *wire.M
 	// Revocations must pay a fee but do so by decreasing one of the output
 	// values instead of increasing the input value and using a change output.
 	// Calculate the estimated signed serialize size.
-	sizeEstimate := txsizes.EstimateSerializeSize(1, revocation.TxOut, false)
+	sizeEstimate := txsizes.EstimateSerializeSize(1, revocation.TxOut, false, udb.AcctypeEc)
 	feeEstimate := txrules.FeeForSerializeSize(feePerKB, sizeEstimate)
 
 	// Reduce the output value of one of the outputs to accomodate for the relay

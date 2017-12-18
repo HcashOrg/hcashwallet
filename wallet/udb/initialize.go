@@ -66,7 +66,7 @@ func Initialize(db walletdb.DB, params *chaincfg.Params, seed, pubPass, privPass
 		const str = "db update failed"
 		return apperrors.E{ErrorCode: apperrors.ErrDatabase, Description: str, Err: err}
 	}
-	return Upgrade(db, pubPass)
+	return Upgrade(db, pubPass, privPass)
 }
 
 // InitializeWatchOnly prepares an empty database for watching-only wallet usage
@@ -117,5 +117,5 @@ func InitializeWatchOnly(db walletdb.DB, params *chaincfg.Params, hdPubKey strin
 		const str = "db update failed"
 		return apperrors.E{ErrorCode: apperrors.ErrDatabase, Description: str, Err: err}
 	}
-	return Upgrade(db, pubPass)
+	return Upgrade(db, pubPass, nil)
 }

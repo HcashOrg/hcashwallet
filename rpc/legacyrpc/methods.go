@@ -34,7 +34,6 @@ import (
 	"github.com/HcashOrg/hcashwallet/wallet/udb"
 
 	"strconv"
-
 )
 
 // API version constants
@@ -984,13 +983,18 @@ func keypoolRefill(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 func createNewAccount(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 	cmd := icmd.(*hcashjson.CreateNewAccountCmd)
 
+	//Todo
+	return nil, fmt.Errorf("not support this function now")
 	// The wildcard * is reserved by the rpc server with the special meaning
 	// of "all accounts", so disallow naming accounts to this string.
 	if cmd.Account == "*" {
 		return nil, &ErrReservedAccountName
 	}
-
-	_, err := w.NextAccount(cmd.Account)
+	acctype, err := strconv.Atoi(cmd.AccountType)
+	if err != nil {
+		return nil, err
+	}
+	_, err = w.NextAccount(cmd.Account, uint8(acctype))
 	if apperrors.IsError(err, apperrors.ErrLocked) {
 		return nil, &hcashjson.RPCError{
 			Code: hcashjson.ErrRPCWalletUnlockNeeded,
@@ -1977,7 +1981,9 @@ func purchaseTicket(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 	if spendLimit < 0 {
 		return nil, ErrNeedPositiveSpendLimit
 	}
-
+	if cmd.FromAccount == udb.BlissAccountName {
+		return nil, fmt.Errorf("unsupported account type for buying tickets")
+	}
 	account, err := w.AccountNumber(cmd.FromAccount)
 	if err != nil {
 		return nil, err
@@ -1996,6 +2002,9 @@ func purchaseTicket(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 	// Set ticket address if specified.
 	var ticketAddr hcashutil.Address
 	if cmd.TicketAddress != nil {
+		if  bytes.Equal([]byte((*cmd.TicketAddress)[0:2]), []byte("Hb")) {
+			return nil, fmt.Errorf("not supported")
+		}
 		if *cmd.TicketAddress != "" {
 			addr, err := decodeAddress(*cmd.TicketAddress, w.ChainParams())
 			if err != nil {
@@ -3092,7 +3101,6 @@ func signRawTransactions(icmd interface{}, w *wallet.Wallet, chainClient *chain.
 // validateAddress handles the validateaddress command.
 func validateAddress(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 	cmd := icmd.(*hcashjson.ValidateAddressCmd)
-
 	result := hcashjson.ValidateAddressWalletResult{}
 	addr, err := decodeAddress(cmd.Address, w.ChainParams())
 	if err != nil {
@@ -3126,22 +3134,34 @@ func validateAddress(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 		return nil, &ErrAccountNameNotFound
 	}
 	result.Account = acctName
-
 	switch ma := ainfo.(type) {
 	case udb.ManagedPubKeyAddress:
+		var pubKeyBytes []byte
+		var err error
+
 		result.IsCompressed = ma.Compressed()
 		result.PubKey = ma.ExportPubKey()
-		pubKeyBytes, err := hex.DecodeString(result.PubKey)
+		pubKeyBytes, err = hex.DecodeString(result.PubKey)
 		if err != nil {
 			return nil, err
 		}
-		pubKeyAddr, err := hcashutil.NewAddressSecpPubKey(pubKeyBytes,
-			w.ChainParams())
-		if err != nil {
-			return nil, err
+		//TODO
+		if  bytes.Equal([]byte(result.Address[0:2]), []byte("Hb")) {
+			pubKeyAddr, err := hcashutil.NewAddressBlissPubKey(pubKeyBytes,
+				w.ChainParams())
+			if err != nil {
+				return nil, err
+			}
+			result.PubKeyAddr = pubKeyAddr.String()
+		} else {
+			pubKeyAddr, err := hcashutil.NewAddressSecpPubKey(pubKeyBytes,
+				w.ChainParams())
+			if err != nil {
+				return nil, err
+			}
+			result.PubKeyAddr = pubKeyAddr.String()
 		}
 
-		result.PubKeyAddr = pubKeyAddr.String()
 
 	case udb.ManagedScriptAddress:
 		result.IsScript = true
