@@ -20,7 +20,7 @@ import:
 - package: github.com/HcashOrg/hcashrpcclient
   version: master
 - package: github.com/HcashOrg/hcashutil
-  version: dev
+  version: master
   subpackages:
   - hdkeychain
 - package: github.com/golang/protobuf
