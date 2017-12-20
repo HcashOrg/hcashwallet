@@ -49,6 +49,7 @@ const (
 	DefaultAccountNum = 0
 
 	DefaultBlissAccountNum = 1
+
 	BlissAccountName = "postquantum"
 	// defaultAccountName is the initial name of the default account.  Note
 	// that the default account may be renamed and is not a reserved name,
@@ -88,7 +89,7 @@ const (
 
 	AcctypeEc 		uint8 = 0
 	AcctypeBliss    uint8 = 1
-	AcctypeMSS      uint8 = 2
+	AcctypeMss      uint8 = 2
 )
 
 var (
