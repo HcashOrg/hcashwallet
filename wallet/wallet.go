@@ -2755,9 +2755,10 @@ func (w *Wallet) CalcPowSubsidy(from, count int) (*float64, error) {
 					return true, nil
 				}
 				if blockchain.IsCoinBaseTx(&details[i].MsgTx) {
-
-					for _,txout := range details[i].MsgTx.TxOut {
-
+					for m,txout := range details[i].MsgTx.TxOut {
+						if m == 0{
+							continue
+						}
 						amount = amount + hcashutil.Amount(txout.Value)
 					}
 				}
@@ -2773,7 +2774,7 @@ func (w *Wallet) CalcPowSubsidy(from, count int) (*float64, error) {
 		return w.TxStore.RangeTransactions(txmgrNs, -1, 0, rangeFn)
 	})
 
-	amount = amount * hcashutil.Amount(w.chainParams.WorkRewardProportion) / hcashutil.Amount(w.chainParams.WorkRewardProportion + w.chainParams.BlockTaxProportion)
+//	amount = amount * hcashutil.Amount(w.chainParams.WorkRewardProportion) / hcashutil.Amount(w.chainParams.WorkRewardProportion + w.chainParams.BlockTaxProportion)
 	result := amount.ToCoin()
 	return &result, err
 }
