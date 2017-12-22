@@ -18,7 +18,7 @@ import (
 	h "github.com/HcashOrg/hcashwallet/internal/helpers"
 	"github.com/HcashOrg/hcashwallet/wallet/internal/txsizes"
 	"github.com/HcashOrg/hcashd/crypto/bliss"
-	"github.com/HcashOrg/hcashd/crypto/mss"
+	"github.com/HcashOrg/hcashd/crypto/lms"
 )
 
 const (
@@ -214,8 +214,8 @@ func AddAllInputScripts(tx *wire.MsgTx, prevPkScripts [][]byte, secrets SecretsS
 		alType, _ := txscript.ExtractPkScriptAltSigType(pkScript)
 		if alType == int(bliss.BSTypeBliss) {
 			sigType = bliss.BSTypeBliss
-		} else if alType == int(mss.MSSTypeMSS) {
-			sigType = mss.MSSTypeMSS
+		} else if alType == int(lms.LMSTypeLMS) {
+			sigType = lms.LMSTypeLMS
 		}
 		sigScript := inputs[i].SignatureScript
 		script, err := txscript.SignTxOutput(chainParams, tx, i,

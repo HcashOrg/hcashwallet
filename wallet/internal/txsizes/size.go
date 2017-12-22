@@ -27,7 +27,7 @@ const (
 	RedeemP2PKHBlissSigScriptSize = 3 + 751 + 3 + 897 + 1
 
 	//TODO specify the size of signature
-	RedeemP2PKHMssSigScriptSize = 3 + 1230 + 3 + 999 + 1
+	RedeemP2PKHLmsSigScriptSize = 3 + 1230 + 3 + 999 + 1
 
 	// P2PKHPkScriptSize is the size of a transaction output script that
 	// pays to a compressed pubkey hash.  It is calculated as:
@@ -60,7 +60,7 @@ const (
 	//RedeemP2PKHAltInputSize = 32 + 4 + 1 + 8 + 4 + 4 + 2 + RedeemP2PKHAltSigScriptSize + 4
 	RedeemP2PKHBlissInputSize = 32 + 4 + 1 + 8 + 4 + 4 + 3 + RedeemP2PKHBlissSigScriptSize + 4
 
-	RedeemP2PKHMssInputSize = 32 + 4 + 1 + 8 + 4 + 4 + 3 + RedeemP2PKHMssSigScriptSize + 4
+	RedeemP2PKHLmsInputSize = 32 + 4 + 1 + 8 + 4 + 4 + 3 + RedeemP2PKHLmsSigScriptSize + 4
 	
 	// P2PKHOutputSize is the serialize size of a transaction output with a
 	// P2PKH output script.  It is calculated as:
@@ -85,7 +85,7 @@ func EstimateSerializeSize(inputCount int, txOuts []*wire.TxOut, addChangeOutput
 	if addChangeOutput {
 		if accType == udb.AcctypeEc {
 			changeSize = P2PKHOutputSize
-		} else if accType == udb.AcctypeBliss || accType == udb.AcctypeMss{
+		} else if accType == udb.AcctypeBliss || accType == udb.AcctypeLms{
 			changeSize = P2PKHAltOutputSize
 		}
 		outputCount++
@@ -94,8 +94,8 @@ func EstimateSerializeSize(inputCount int, txOuts []*wire.TxOut, addChangeOutput
 		inputSize = RedeemP2PKHInputSize
 	}else if accType == udb.AcctypeBliss {
 		inputSize = RedeemP2PKHBlissInputSize
-	}else if accType == udb.AcctypeMss {
-		inputSize = RedeemP2PKHMssInputSize
+	}else if accType == udb.AcctypeLms {
+		inputSize = RedeemP2PKHLmsInputSize
 	}
 
 

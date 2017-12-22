@@ -406,7 +406,7 @@ func (w *Wallet) txToOutputsInternal(outputs []*wire.TxOut, account uint32, notS
 			return err
 		}
 		accType := accprop.AccountType
-		if accType != udb.AcctypeEc && accType != udb.AcctypeBliss && accType != udb.AcctypeMss{
+		if accType != udb.AcctypeEc && accType != udb.AcctypeBliss && accType != udb.AcctypeLms{
 			return errors.New("unsupport type!!")
 		}
 		// Create the unsigned transaction.

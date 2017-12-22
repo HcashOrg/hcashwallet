@@ -86,10 +86,10 @@ Bsearch:
 
 			//TODO
 			/*
-			coinTypeXpriv.SetAlgType(udb.AcctypeMSS)
+			coinTypeXpriv.SetAlgType(udb.AcctypeLms)
 			go func() {
 				used, err := w.newAcctAndUsed(client, coinTypeXpriv, account)
-				results[i] = result{used, account, udb.AcctypeMSS, err}
+				results[i] = result{used, account, udb.AcctypeLms, err}
 				wg.Done()
 			}()
 			*/
@@ -144,10 +144,10 @@ Bsearch:
 
 		//TODO
 		/*
-		coinTypeXpriv.SetAlgType(udb.AcctypeMSS)
+		coinTypeXpriv.SetAlgType(udb.AcctypeLms)
 		go func() {
 			used, err := w.newAcctAndUsed(client, coinTypeXpriv, account)
-			results[i] = result{used, account, udb.AcctypeMSS, err}
+			results[i] = result{used, account, udb.AcctypeLms, err}
 			wg.Done()
 		}()
 		*/

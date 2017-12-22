@@ -89,7 +89,7 @@ const (
 
 	AcctypeEc 		uint8 = 0
 	AcctypeBliss    uint8 = 1
-	AcctypeMss      uint8 = 2
+	AcctypeLms      uint8 = 2
 )
 
 var (
