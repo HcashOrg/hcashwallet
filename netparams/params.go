@@ -22,7 +22,7 @@ type Params struct {
 var MainNetParams = Params{
 	Params:            &chaincfg.MainNetParams,
 	JSONRPCClientPort: "18009",
-	JSONRPCServerPort: "184010",
+	JSONRPCServerPort: "18010",
 	GRPCServerPort:    "18011",
 }
 
