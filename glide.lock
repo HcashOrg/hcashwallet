@@ -1,5 +1,5 @@
-hash: 0ab86e8536c59079c75a4995276ef7e7cc22eb4a4cca9ecd8a810a5cd788bc69
-updated: 2018-01-25T20:28:27.943038677+08:00
+hash: d181c521bdb0e206e6fb06d262b1e055b762c009bc5607b84913db596db96486
+updated: 2017-12-24T17:03:39.799480888+08:00
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -45,7 +45,7 @@ imports:
 - name: github.com/HcashOrg/bitset
   version: 3b5f0c752dfbeeda856fd6af60e997257ca399fc
 - name: github.com/HcashOrg/hcashd
-  version: 3e2e8c49aa660b613b2d2d0b97f2d01b55f2a1fc
+  version: 8593101ce3fd961649b2cd04960868fa365ea048
   subpackages:
   - blockchain
   - blockchain/internal/dbnamespace
@@ -70,9 +70,9 @@ imports:
   - txscript
   - wire
 - name: github.com/HcashOrg/hcashrpcclient
-  version: ba3a18d6f9f2432068473bc8665bcb92045a3650
+  version: 72cabf1da64ce4b1546d89abd3fd0ee8326bcb7e
 - name: github.com/HcashOrg/hcashutil
-  version: 0f46aaecda89f2784eda4549bf09e25be2f268b5
+  version: 83693977162be767e8e700dfb14218445a327273
   subpackages:
   - base58
   - hdkeychain
@@ -90,16 +90,16 @@ imports:
   - poly
   - sampler
 - name: github.com/LoCCS/lmots
-  version: f542ff0360776b396a6c50575ed89596e6eb3f93
+  version: a5066dbdb2245a4fb5058ad33fb98c41596d2c09
   subpackages:
   - hash
   - rand
 - name: github.com/LoCCS/lms
-  version: ec46abb5d7b5f0e6566ed518b026c8b92fb11563
+  version: fa019d2cc8d79e57b2fdf9258aee53bacea05b53
   subpackages:
   - container/stack
 - name: golang.org/x/crypto
-  version: 3d37316aaa6bd9929127ac9a527abf408178ea7b
+  version: d585fd2cc9195196078f516b69daff6744ef5e84
   subpackages:
   - nacl/secretbox
   - pbkdf2
@@ -110,7 +110,7 @@ imports:
   - sha3
   - ssh/terminal
 - name: golang.org/x/net
-  version: 0ed95abb35c445290478a5348a7b38bb154135fd
+  version: d866cfc389cec985d6fda2859936a575a55a3ab6
   subpackages:
   - context
   - http2
@@ -124,23 +124,23 @@ imports:
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: ef802241c90f84d84d644a2d8d0de8ee96038c9c
+  version: 83801418e1b59fb1880e363299581ee543af32ca
   subpackages:
   - unix
   - windows
 - name: golang.org/x/text
-  version: e19ae1496984b1c655b8044a65c0300a3c878dd3
+  version: eb22672bea55af56d225d4e35405f4d2e9f062a0
   subpackages:
   - secure/bidirule
   - transform
   - unicode/bidi
   - unicode/norm
 - name: google.golang.org/genproto
-  version: 4eb30f4778eed4c258ba66527a0d4f9ec8a36c45
+  version: a8101f21cf983e773d0c1133ebc5424792003214
   subpackages:
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: 6b51017f791ae1cfbec89c52efdf444b13b550ef
+  version: e687fa4e6424368ece6e4fe727cea2c806a0fcb4
   subpackages:
   - balancer
   - balancer/base
