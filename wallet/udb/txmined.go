@@ -182,8 +182,14 @@ func (s *Store) MainChainTip(ns walletdb.ReadBucket) (chainhash.Hash, int32, int
 	header := ns.NestedReadBucket(bucketHeaders).Get(hash[:])
 	height := extractBlockHeaderHeight(header)
 	keyHeight := extractBlockHeaderKeyHeight(header)
+	realKeyHeight := keyHeight
 
-	return hash, height, keyHeight
+	bits := extractBlockHeaderBits(header)
+	if blockchain.HashToBig(&hash).Cmp(blockchain.CompactToBig(uint32(bits))) <= 0 {
+		realKeyHeight++
+	}
+
+	return hash, height, realKeyHeight
 }
 
 /*
