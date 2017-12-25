@@ -2002,10 +2002,10 @@ func purchaseTicket(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 	// Set ticket address if specified.
 	var ticketAddr hcashutil.Address
 	if cmd.TicketAddress != nil {
-		if  bytes.Equal([]byte((*cmd.TicketAddress)[0:2]), []byte("Hb")) {
-			return nil, fmt.Errorf("not supported")
-		}
 		if *cmd.TicketAddress != "" {
+			if  bytes.Equal([]byte((*cmd.TicketAddress)[0:2]), []byte("Hb")) {
+				return nil, fmt.Errorf("not supported")
+			}
 			addr, err := decodeAddress(*cmd.TicketAddress, w.ChainParams())
 			if err != nil {
 				return nil, err
