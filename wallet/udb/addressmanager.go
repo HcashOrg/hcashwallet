@@ -262,6 +262,7 @@ var newCryptoKey = defaultNewCryptoKey
 // key store.
 type Manager struct {
 	mtx sync.RWMutex
+	mtx2 sync.RWMutex
 
 	// returnedSecretsMu is a read/write mutex that is held for reads when
 	// secrets (private keys and redeem scripts) are being used and held for
@@ -547,6 +548,8 @@ func (m *Manager) loadAccountInfo(ns walletdb.ReadBucket, account uint32) (*acco
 		acctInfo.acctKeyPriv = acctKeyPriv
 	}
 
+	defer m.mtx2.Unlock()
+	m.mtx2.Lock()
 	// Add it to the cache and return it when everything is successful.
 	m.acctInfo[account] = acctInfo
 	return acctInfo, nil
@@ -1643,10 +1646,10 @@ func (m *Manager) syncAccountToAddrIndex(ns walletdb.ReadWriteBucket, account ui
 	if acctInfo.acctType == AcctypeBliss {
 		for child := syncToIndex; ; child-- {
 			xprivChild, err := xprivBranch.Child(child)
-			xpubChild, err := xprivChild.Neuter()
 			if err == hdkeychain.ErrInvalidChild {
 				continue
 			}
+			xpubChild, err := xprivChild.Neuter()
 			if err != nil {
 				const str = "failed to derive child xpub"
 				return apperrors.E{ErrorCode: apperrors.ErrKeyChain, Description: str, Err: err}

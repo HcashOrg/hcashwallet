@@ -319,7 +319,9 @@ func (w *Wallet) nextAddress(persist persistReturnedChildFunc, accountinfo *udb.
 			alb.cursor++
 			addresses := make([]hcashutil.Address, 0, 1)
 			addresses = append(addresses, addr)
-			err = chainClient.LoadTxFilter(false, addresses, nil)
+			if chainClient != nil {
+				err = chainClient.LoadTxFilter(false, addresses, nil)
+			}
 			if err != nil {
 				return nil, err
 			}
