@@ -1,5 +1,5 @@
 hash: 0ab86e8536c59079c75a4995276ef7e7cc22eb4a4cca9ecd8a810a5cd788bc69
-updated: 2018-01-12T14:45:53.701318216+08:00
+updated: 2018-01-12T15:03:29.708825609+08:00
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -45,7 +45,7 @@ imports:
 - name: github.com/HcashOrg/bitset
   version: 3b5f0c752dfbeeda856fd6af60e997257ca399fc
 - name: github.com/HcashOrg/hcashd
-  version: db4c38cfde0a8f3464aedb491e315874f6046773
+  version: 454e3b76cc9d2c70ecdff03c4246cdac5a5a6355
   subpackages:
   - blockchain
   - blockchain/internal/dbnamespace
@@ -99,7 +99,7 @@ imports:
   subpackages:
   - container/stack
 - name: golang.org/x/crypto
-  version: d585fd2cc9195196078f516b69daff6744ef5e84
+  version: 5f55bce93ad2c89f411e009659bb1fd83da36e7b
   subpackages:
   - nacl/secretbox
   - pbkdf2
@@ -110,7 +110,7 @@ imports:
   - sha3
   - ssh/terminal
 - name: golang.org/x/net
-  version: d866cfc389cec985d6fda2859936a575a55a3ab6
+  version: 5ccada7d0a7ba9aeb5d3aca8d3501b4c2a509fec
   subpackages:
   - context
   - http2
@@ -124,12 +124,12 @@ imports:
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: 83801418e1b59fb1880e363299581ee543af32ca
+  version: 810d7000345868fc619eb81f46307107118f4ae1
   subpackages:
   - unix
   - windows
 - name: golang.org/x/text
-  version: eb22672bea55af56d225d4e35405f4d2e9f062a0
+  version: e19ae1496984b1c655b8044a65c0300a3c878dd3
   subpackages:
   - secure/bidirule
   - transform
@@ -165,14 +165,14 @@ imports:
   - transport
 testImports:
 - name: github.com/davecgh/go-spew
-  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
+  version: ecdeabc65495df2dec95d7c4a4c3e021903035e5
   subpackages:
   - spew
 - name: github.com/pmezard/go-difflib
-  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
-  version: 2aa2c176b9dab406a6970f6a55f513e8a8c8b18f
+  version: 87b1dfb5b2fa649f52695dd9eae19abe404a4308
   subpackages:
   - assert
