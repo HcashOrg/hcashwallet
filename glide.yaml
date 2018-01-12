@@ -53,3 +53,9 @@ import:
 - package: golang.org/x/sync
   subpackages:
   - errgroup
+- package: github.com/LoCCS/bliss
+- package: github.com/LoCCS/lmots
+  version: ^v1.5
+- package: github.com/LoCCS/lms
+  version: ^v1.5
+

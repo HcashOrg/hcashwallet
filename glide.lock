@@ -1,5 +1,5 @@
-hash: c072c39ed5209ac1af39139d2a6125a3d1fb2acf52409e7fdf30dcfe473c07dd
-updated: 2017-12-24T16:57:46.4432723+08:00
+hash: 0ab86e8536c59079c75a4995276ef7e7cc22eb4a4cca9ecd8a810a5cd788bc69
+updated: 2018-01-12T14:45:53.701318216+08:00
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -72,7 +72,7 @@ imports:
 - name: github.com/HcashOrg/hcashrpcclient
   version: 72cabf1da64ce4b1546d89abd3fd0ee8326bcb7e
 - name: github.com/HcashOrg/hcashutil
-  version: 83693977162be767e8e700dfb14218445a327273
+  version: d769a23685f8210d1f048b714d25751fb45c5eb2
   subpackages:
   - base58
   - hdkeychain
@@ -90,12 +90,12 @@ imports:
   - poly
   - sampler
 - name: github.com/LoCCS/lmots
-  version: a5066dbdb2245a4fb5058ad33fb98c41596d2c09
+  version: f542ff0360776b396a6c50575ed89596e6eb3f93
   subpackages:
   - hash
   - rand
 - name: github.com/LoCCS/lms
-  version: fa019d2cc8d79e57b2fdf9258aee53bacea05b53
+  version: ec46abb5d7b5f0e6566ed518b026c8b92fb11563
   subpackages:
   - container/stack
 - name: golang.org/x/crypto
@@ -140,9 +140,10 @@ imports:
   subpackages:
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: e687fa4e6424368ece6e4fe727cea2c806a0fcb4
+  version: 7cea4cc846bcf00cbb27595b07da5de875ef7de9
   subpackages:
   - balancer
+  - balancer/base
   - balancer/roundrobin
   - codes
   - connectivity
@@ -164,11 +165,11 @@ imports:
   - transport
 testImports:
 - name: github.com/davecgh/go-spew
-  version: ecdeabc65495df2dec95d7c4a4c3e021903035e5
+  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
   subpackages:
   - spew
 - name: github.com/pmezard/go-difflib
-  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
