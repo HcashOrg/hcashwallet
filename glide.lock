@@ -1,5 +1,5 @@
-hash: d181c521bdb0e206e6fb06d262b1e055b762c009bc5607b84913db596db96486
-updated: 2017-12-24T17:03:39.799480888+08:00
+hash: 0ab86e8536c59079c75a4995276ef7e7cc22eb4a4cca9ecd8a810a5cd788bc69
+updated: 2018-01-12T15:03:29.708825609+08:00
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -45,7 +45,7 @@ imports:
 - name: github.com/HcashOrg/bitset
   version: 3b5f0c752dfbeeda856fd6af60e997257ca399fc
 - name: github.com/HcashOrg/hcashd
-  version: 8593101ce3fd961649b2cd04960868fa365ea048
+  version: 454e3b76cc9d2c70ecdff03c4246cdac5a5a6355
   subpackages:
   - blockchain
   - blockchain/internal/dbnamespace
@@ -72,7 +72,7 @@ imports:
 - name: github.com/HcashOrg/hcashrpcclient
   version: 72cabf1da64ce4b1546d89abd3fd0ee8326bcb7e
 - name: github.com/HcashOrg/hcashutil
-  version: 83693977162be767e8e700dfb14218445a327273
+  version: d769a23685f8210d1f048b714d25751fb45c5eb2
   subpackages:
   - base58
   - hdkeychain
@@ -90,16 +90,16 @@ imports:
   - poly
   - sampler
 - name: github.com/LoCCS/lmots
-  version: a5066dbdb2245a4fb5058ad33fb98c41596d2c09
+  version: f542ff0360776b396a6c50575ed89596e6eb3f93
   subpackages:
   - hash
   - rand
 - name: github.com/LoCCS/lms
-  version: fa019d2cc8d79e57b2fdf9258aee53bacea05b53
+  version: ec46abb5d7b5f0e6566ed518b026c8b92fb11563
   subpackages:
   - container/stack
 - name: golang.org/x/crypto
-  version: d585fd2cc9195196078f516b69daff6744ef5e84
+  version: 5f55bce93ad2c89f411e009659bb1fd83da36e7b
   subpackages:
   - nacl/secretbox
   - pbkdf2
@@ -110,7 +110,7 @@ imports:
   - sha3
   - ssh/terminal
 - name: golang.org/x/net
-  version: d866cfc389cec985d6fda2859936a575a55a3ab6
+  version: 5ccada7d0a7ba9aeb5d3aca8d3501b4c2a509fec
   subpackages:
   - context
   - http2
@@ -124,12 +124,12 @@ imports:
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: 83801418e1b59fb1880e363299581ee543af32ca
+  version: 810d7000345868fc619eb81f46307107118f4ae1
   subpackages:
   - unix
   - windows
 - name: golang.org/x/text
-  version: eb22672bea55af56d225d4e35405f4d2e9f062a0
+  version: e19ae1496984b1c655b8044a65c0300a3c878dd3
   subpackages:
   - secure/bidirule
   - transform
@@ -140,7 +140,7 @@ imports:
   subpackages:
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: e687fa4e6424368ece6e4fe727cea2c806a0fcb4
+  version: 7cea4cc846bcf00cbb27595b07da5de875ef7de9
   subpackages:
   - balancer
   - balancer/base
