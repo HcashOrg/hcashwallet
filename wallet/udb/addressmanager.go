@@ -494,6 +494,9 @@ func (m *Manager) GetMasterPubkey(ns walletdb.ReadBucket, account uint32) (strin
 // This function MUST be called with the manager lock held for writes.
 func (m *Manager) loadAccountInfo(ns walletdb.ReadBucket, account uint32) (*accountInfo, error) {
 	// Return the account info from cache if it's available.
+
+	m.mtx2.Lock()
+	defer m.mtx2.Unlock()
 	if acctInfo, ok := m.acctInfo[account]; ok {
 		if acctInfo.acctType == AcctypeEc {
 			return acctInfo, nil
@@ -548,10 +551,9 @@ func (m *Manager) loadAccountInfo(ns walletdb.ReadBucket, account uint32) (*acco
 		acctInfo.acctKeyPriv = acctKeyPriv
 	}
 
-	defer m.mtx2.Unlock()
-	m.mtx2.Lock()
 	// Add it to the cache and return it when everything is successful.
 	m.acctInfo[account] = acctInfo
+
 	return acctInfo, nil
 }
 

@@ -847,7 +847,7 @@ func (w *Wallet) loadActiveAddrs(dbtx walletdb.ReadTx, chainClient *chain.RPCCli
 		}
 		errs <- nil
 	}
-	loadBlissAddrs := func(account, branch, n uint32, errs chan<- error) {
+	loadBlissAddrs := func(account, branch, n uint32, branchkey *hdkeychain.ExtendedKey, errs chan<- error) {
 		jobs := n/256 + 1
 		jobErrs := make(chan error, jobs)
 		for child := uint32(0); child <= n; child += 256 {
@@ -860,6 +860,12 @@ func (w *Wallet) loadActiveAddrs(dbtx walletdb.ReadTx, chainClient *chain.RPCCli
 						addrmgrNs := tx.ReadBucket(waddrmgrNamespaceKey)
 						var err error
 						addr, err = w.Manager.LoadBlissAddr(addrmgrNs, account, branch, child)
+						if err != nil {
+							_, err := branchkey.Child(child)
+							if err == hdkeychain.ErrInvalidChild {
+								return err
+							}
+						}
 						return err
 					})
 					if err == hdkeychain.ErrInvalidChild {
@@ -893,7 +899,7 @@ func (w *Wallet) loadActiveAddrs(dbtx walletdb.ReadTx, chainClient *chain.RPCCli
 	errs := make(chan error, int(lastAcct+1)*2+1)
 	var bip0044AddrCount, importedAddrCount uint64
 	for acct := uint32(0); acct <= lastAcct; acct++ {
-		var xpub, xpriv, extKey, intKey *hdkeychain.ExtendedKey
+		var xpub, xpriv, extKey, intKey, intKeypriv, extKeypriv *hdkeychain.ExtendedKey
 		props, err := w.Manager.AccountProperties(addrmgrNs, acct)
 		if err != nil {
 			return 0, err
@@ -915,13 +921,11 @@ func (w *Wallet) loadActiveAddrs(dbtx walletdb.ReadTx, chainClient *chain.RPCCli
 				return 0, err
 			}
 		} else if props.AccountType == udb.AcctypeBliss {
-			intKeypriv, err := xpriv.Child(udb.InternalBranch)
+			intKeypriv, err = xpriv.Child(udb.InternalBranch)
 			intKey, err = intKeypriv.Neuter()
-			extKeypriv, err := xpriv.Child(udb.ExternalBranch)
+			extKeypriv, err = xpriv.Child(udb.ExternalBranch)
 			extKey, err = extKeypriv.Neuter()
 			xpriv.Zero()
-			intKeypriv.Zero()
-			extKeypriv.Zero()
 			if err != nil {
 				return 0, err
 			}
@@ -936,8 +940,10 @@ func (w *Wallet) loadActiveAddrs(dbtx walletdb.ReadTx, chainClient *chain.RPCCli
 			go loadBranchAddrs(extKey, extn, errs)
 			go loadBranchAddrs(intKey, intn, errs)
 		}else if extKey.GetAlgType() == udb.AcctypeBliss {
-			go loadBlissAddrs(props.AccountNumber, udb.ExternalBranch, extn, errs)
-			go loadBlissAddrs(props.AccountNumber, udb.InternalBranch, intn, errs)
+			go loadBlissAddrs(props.AccountNumber, udb.ExternalBranch, extn, extKeypriv, errs)
+			go loadBlissAddrs(props.AccountNumber, udb.InternalBranch, intn, intKeypriv, errs)
+			defer intKeypriv.Zero()
+			defer extKeypriv.Zero()
 		}
 
 		// loadBranchAddrs loads addresses through extn/intn, and the actual
