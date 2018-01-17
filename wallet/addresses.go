@@ -223,7 +223,8 @@ func (w *Wallet) nextAddress(persist persistReturnedChildFunc, accountinfo *udb.
 							return err
 						}
 						for i := uint32(1); i <= gapLimit; i++{
-							addrpriv, err := branchpriv.Child(alb.lastUsed+i+alb.cursor+gapLimit)
+							childIndex := alb.lastUsed + i + alb.cursor
+							addrpriv, err := branchpriv.Child(childIndex)
 							if err != nil {
 								return err
 							}
@@ -280,7 +281,7 @@ func (w *Wallet) nextAddress(persist persistReturnedChildFunc, accountinfo *udb.
 				if err != nil {
 					return err
 				}
-				addrpriv, err := branchpriv.Child(childIndex+gapLimit)
+				addrpriv, err := branchpriv.Child(childIndex)
 				if err != nil {
 					return err
 				}
@@ -306,7 +307,7 @@ func (w *Wallet) nextAddress(persist persistReturnedChildFunc, accountinfo *udb.
 			if accountinfo.AccountType == udb.AcctypeBliss {
 				err := walletdb.Update(w.db, func(tx walletdb.ReadWriteTx) error {
 					addrmgrNs := tx.ReadWriteBucket(waddrmgrNamespaceKey)
-					err = udb.PutChainedBlissAddress(addrmgrNs, addr, accountinfo.AccountNumber, udb.SSFull, branch, childIndex+gapLimit)
+					err = udb.PutChainedBlissAddress(addrmgrNs, addr, accountinfo.AccountNumber, udb.SSFull, branch, childIndex)
 					if err != nil {
 						return err
 					}
@@ -382,7 +383,6 @@ func (w *Wallet) watchFutureAddresses(dbtx walletdb.ReadTx) error {
 	if err != nil {
 		return err
 	}
-
 	type children struct {
 		external uint32
 		internal uint32
@@ -422,14 +422,12 @@ func (w *Wallet) watchFutureAddresses(dbtx walletdb.ReadTx) error {
 		// currently watched address.
 		startExt := a.albExternal.lastUsed + 1 + gapLimit
 		startInt := a.albInternal.lastUsed + 1 + gapLimit
-
 		// endExt/Int are the end indexes for newly watched addresses.  Because
 		// addresses ranges are described using a half open range, these indexes
 		// are one beyond the last address that will be watched.
 		dbLastUsed := dbLastUsedChildren[account]
 		endExt := dbLastUsed.external + 1 + gapLimit
 		endInt := dbLastUsed.internal + 1 + gapLimit
-
 		xpubBranchExt := a.albExternal.branchXpub
 		xpubBranchInt := a.albInternal.branchXpub
 
@@ -444,6 +442,11 @@ func (w *Wallet) watchFutureAddresses(dbtx walletdb.ReadTx) error {
 		if totalAddrs == 0 {
 			errs <- nil
 			continue
+		} else {
+			fmt.Println("startExt :", startExt)
+			fmt.Println("endExt :", endExt)
+			fmt.Println("startInt :", startInt)
+			fmt.Println("endInt :", endInt)
 		}
 		addrs := make([]hcashutil.Address, 0, totalAddrs)
 		if xpubBranchExt.GetAlgType() == udb.AcctypeEc {
@@ -458,17 +461,18 @@ func (w *Wallet) watchFutureAddresses(dbtx walletdb.ReadTx) error {
 				return err
 			}
 		} else if xpubBranchExt.GetAlgType() == udb.AcctypeBliss {
-			addrsEx, err := w.Manager.LoadBlissAddrs(ns, account, udb.ExternalBranch, 0, DefaultGapLimit)	
+			addrsEx, err := w.Manager.LoadBlissAddrs(ns, account, udb.ExternalBranch, startExt, endExt-startExt)
 			if err != nil {
 			return err
 			}
-			addrsIn, err := w.Manager.LoadBlissAddrs(ns, account, udb.InternalBranch, 0, DefaultGapLimit)	
+			addrsIn, err := w.Manager.LoadBlissAddrs(ns, account, udb.InternalBranch, startInt, endInt-startInt)
 			if err != nil {
 			return err
 			}
 			addrs = append(addrsEx, addrsIn[:]...)
-		}
 
+		}
+		fmt.Println("addrs:",addrs)
 		// Update the in-memory address buffers with the latest last used
 		// indexes retreived from the db.
 		if endExt > startExt {
