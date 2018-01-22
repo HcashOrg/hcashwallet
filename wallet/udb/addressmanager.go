@@ -17,10 +17,11 @@ import (
 	"github.com/HcashOrg/hcashutil"
 	"github.com/HcashOrg/hcashutil/hdkeychain"
 	"github.com/HcashOrg/hcashwallet/apperrors"
-	"github.com/HcashOrg/hcashwallet/internal/zero"
 	"github.com/HcashOrg/hcashwallet/snacl"
 	"github.com/HcashOrg/hcashwallet/walletdb"
+	"github.com/HcashOrg/hcashd/crypto/bliss"
 	"golang.org/x/crypto/ripemd160"
+	"github.com/HcashOrg/hcashwallet/internal/zero"
 )
 
 const (
@@ -772,7 +773,14 @@ func (m *Manager) importedAddressRowToManaged(row *dbImportedAddressRow) (Manage
 		return nil, managerError(apperrors.ErrCrypto, str, err)
 	}
 
-	pubKey, err := chainec.Secp256k1.ParsePubKey(pubBytes)
+	var pubKey chainec.PublicKey
+
+	if len(pubBytes) == 33 || len(pubBytes) == 65{
+		pubKey, err = chainec.Secp256k1.ParsePubKey(pubBytes)
+	}else {
+		pubKey, err = bliss.Bliss.ParsePubKey(pubBytes)
+	}
+
 	if err != nil {
 		str := "invalid public key for imported address"
 		return nil, managerError(apperrors.ErrCrypto, str, err)
@@ -1185,8 +1193,6 @@ func (m *Manager) ImportPrivateKey(ns walletdb.ReadWriteBucket, wif *hcashutil.W
 		}
 	}
 
-	// Save the new imported address to the db and update start block (if
-	// needed) in a single transaction.
 	err = putImportedAddress(ns, pubKeyHash, ImportedAddrAccount, SSNone,
 		encryptedPubKey, encryptedPrivKey)
 	if err != nil {
@@ -1194,11 +1200,23 @@ func (m *Manager) ImportPrivateKey(ns walletdb.ReadWriteBucket, wif *hcashutil.W
 	}
 
 	// Create a new managed address based on the imported address.
-	managedAddr, err := newManagedAddressWithoutPrivKey(m, ImportedAddrAccount,
-		chainec.Secp256k1.NewPublicKey(wif.PrivKey.Public()), true)
-	if err != nil {
-		return nil, err
+	var managedAddr *managedAddress
+	// Save the new imported address to the db and update start block (if
+	// needed) in a single transaction.
+	if wif.AlgorithmType !=bliss.BSTypeBliss {
+		managedAddr, err = newManagedAddressWithoutPrivKey(m, ImportedAddrAccount,
+			chainec.Secp256k1.NewPublicKey(wif.PrivKey.Public()), true)
+		if err != nil {
+			return nil, err
+		}
+	}else{
+		managedAddr, err = newManagedAddressWithoutPrivKey(m, ImportedAddrAccount,
+			wif.PrivKey.(bliss.PrivateKey).PublicKey(), true)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	managedAddr.imported = true
 	return managedAddr, nil
 }
