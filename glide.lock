@@ -1,5 +1,5 @@
-hash: 0ab86e8536c59079c75a4995276ef7e7cc22eb4a4cca9ecd8a810a5cd788bc69
-updated: 2018-01-12T15:03:29.708825609+08:00
+hash: a2ca335325a0498479cbfece8c5881266ff3d9795d278bba09fde729d92be504
+updated: 2018-01-25T20:31:23.488091279+08:00
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -45,7 +45,7 @@ imports:
 - name: github.com/HcashOrg/bitset
   version: 3b5f0c752dfbeeda856fd6af60e997257ca399fc
 - name: github.com/HcashOrg/hcashd
-  version: 454e3b76cc9d2c70ecdff03c4246cdac5a5a6355
+  version: c52db701a85dddf49cacaf99e4de271fff1e602f
   subpackages:
   - blockchain
   - blockchain/internal/dbnamespace
@@ -70,9 +70,9 @@ imports:
   - txscript
   - wire
 - name: github.com/HcashOrg/hcashrpcclient
-  version: 0f46aaecda89f2784eda4549bf09e25be2f268b5
+  version: ba3a18d6f9f2432068473bc8665bcb92045a3650
 - name: github.com/HcashOrg/hcashutil
-  version: d769a23685f8210d1f048b714d25751fb45c5eb2
+  version: 0f46aaecda89f2784eda4549bf09e25be2f268b5
   subpackages:
   - base58
   - hdkeychain
@@ -99,7 +99,7 @@ imports:
   subpackages:
   - container/stack
 - name: golang.org/x/crypto
-  version: 5f55bce93ad2c89f411e009659bb1fd83da36e7b
+  version: 3d37316aaa6bd9929127ac9a527abf408178ea7b
   subpackages:
   - nacl/secretbox
   - pbkdf2
@@ -110,7 +110,7 @@ imports:
   - sha3
   - ssh/terminal
 - name: golang.org/x/net
-  version: 5ccada7d0a7ba9aeb5d3aca8d3501b4c2a509fec
+  version: 0ed95abb35c445290478a5348a7b38bb154135fd
   subpackages:
   - context
   - http2
@@ -124,7 +124,7 @@ imports:
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: 810d7000345868fc619eb81f46307107118f4ae1
+  version: ef802241c90f84d84d644a2d8d0de8ee96038c9c
   subpackages:
   - unix
   - windows
@@ -136,11 +136,11 @@ imports:
   - unicode/bidi
   - unicode/norm
 - name: google.golang.org/genproto
-  version: a8101f21cf983e773d0c1133ebc5424792003214
+  version: 4eb30f4778eed4c258ba66527a0d4f9ec8a36c45
   subpackages:
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: 7cea4cc846bcf00cbb27595b07da5de875ef7de9
+  version: 6b51017f791ae1cfbec89c52efdf444b13b550ef
   subpackages:
   - balancer
   - balancer/base
