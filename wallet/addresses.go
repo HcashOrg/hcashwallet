@@ -442,11 +442,6 @@ func (w *Wallet) watchFutureAddresses(dbtx walletdb.ReadTx) error {
 		if totalAddrs == 0 {
 			errs <- nil
 			continue
-		} else {
-			fmt.Println("startExt :", startExt)
-			fmt.Println("endExt :", endExt)
-			fmt.Println("startInt :", startInt)
-			fmt.Println("endInt :", endInt)
 		}
 		addrs := make([]hcashutil.Address, 0, totalAddrs)
 		if xpubBranchExt.GetAlgType() == udb.AcctypeEc {
@@ -472,7 +467,6 @@ func (w *Wallet) watchFutureAddresses(dbtx walletdb.ReadTx) error {
 			addrs = append(addrsEx, addrsIn[:]...)
 
 		}
-		fmt.Println("addrs:",addrs)
 		// Update the in-memory address buffers with the latest last used
 		// indexes retreived from the db.
 		if endExt > startExt {
