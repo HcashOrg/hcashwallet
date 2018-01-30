@@ -120,6 +120,7 @@ type dbImportedAddressRow struct {
 	dbAddressRow
 	encryptedPubKey  []byte
 	encryptedPrivKey []byte
+	algType          uint8
 }
 
 // dbImportedAddressRow houses additional information stored about a script
@@ -956,6 +957,11 @@ func deserializeImportedAddress(row *dbAddressRow) (*dbImportedAddressRow, error
 	retRow.encryptedPrivKey = make([]byte, privLen)
 	copy(retRow.encryptedPrivKey, row.rawData[offset:offset+privLen])
 
+	if privLen == 72{
+		retRow.algType = AcctypeEc
+	}else if privLen == 425 {
+		retRow.algType = AcctypeBliss
+	}
 	return &retRow, nil
 }
 
@@ -1214,21 +1220,23 @@ func fetchAddrAccount(ns walletdb.ReadBucket, addressID []byte) (uint32, error) 
 
 // forEachAccountAddress calls the given function with each address of
 // the given account stored in the manager, breaking early on error.
-func forEachAccountAddress(ns walletdb.ReadBucket, account uint32, fn func(rowInterface interface{}) error) error {
+func forEachAccountAddress(ns walletdb.ReadBucket, account uint32, fn func(rowInterface interface{}) error) (uint8,error) {
 	bucket := ns.NestedReadBucket(addrAcctIdxBucketName).
 		NestedReadBucket(uint32ToBytes(account))
 	// if index bucket is missing the account, there hasn't been any address
 	// entries yet
 	if bucket == nil {
-		return nil
+		return 255,nil
 	}
 
+	var addrRow interface{}
 	err := bucket.ForEach(func(k, v []byte) error {
 		// Skip buckets.
 		if v == nil {
 			return nil
 		}
-		addrRow, err := fetchAddressByHash(ns, k)
+		var err error
+		addrRow, err = fetchAddressByHash(ns, k)
 		if err != nil {
 			if merr, ok := err.(apperrors.E); ok {
 				desc := fmt.Sprintf("failed to fetch address hash '%x': %v",
@@ -1242,9 +1250,14 @@ func forEachAccountAddress(ns walletdb.ReadBucket, account uint32, fn func(rowIn
 		return fn(addrRow)
 	})
 	if err != nil {
-		return maybeConvertDbError(err)
+		return 255,maybeConvertDbError(err)
 	}
-	return nil
+
+	switch row := addrRow.(type) {
+	case *dbImportedAddressRow:
+		return row.algType,nil
+	}
+	return 255,nil
 }
 
 // forEachActiveAddress calls the given function with each active address

@@ -607,11 +607,12 @@ func (m *Manager) AccountProperties(ns walletdb.ReadBucket, account uint32) (*Ac
 			importedKeyCount++
 			return nil
 		}
-		err := forEachAccountAddress(ns, ImportedAddrAccount, count)
+		algType,err := forEachAccountAddress(ns, ImportedAddrAccount, count)
 		if err != nil {
 			return nil, err
 		}
 		props.ImportedKeyCount = importedKeyCount
+		props.AccountType = algType
 	}
 
 	return props, nil
@@ -1922,7 +1923,7 @@ func (m *Manager) ForEachAccountAddress(ns walletdb.ReadBucket, account uint32,
 		}
 		return fn(managedAddr)
 	}
-	err := forEachAccountAddress(ns, account, addrFn)
+	_,err := forEachAccountAddress(ns, account, addrFn)
 	if err != nil {
 		return maybeConvertDbError(err)
 	}
@@ -2024,7 +2025,11 @@ func (m *Manager) PrivateKey(ns walletdb.ReadBucket, addr hcashutil.Address) (ke
 			err := apperrors.E{ErrorCode: apperrors.ErrCrypto, Description: str, Err: err}
 			return nil, nil, err
 		}
-		key, _ = chainec.Secp256k1.PrivKeyFromBytes(privKeyBytes)
+		if len(privKeyBytes) == 385 {
+			key,_ = bliss.Bliss.PrivKeyFromBytes(privKeyBytes)
+		}else {
+			key, _ = chainec.Secp256k1.PrivKeyFromBytes(privKeyBytes)
+		}
 		// PrivKeyFromBytes creates a copy of the private key, and therefore
 		// the decrypted private key bytes must be zeroed now.
 		zero.Bytes(privKeyBytes)
