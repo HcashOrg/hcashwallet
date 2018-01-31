@@ -1,5 +1,5 @@
 hash: 0ab86e8536c59079c75a4995276ef7e7cc22eb4a4cca9ecd8a810a5cd788bc69
-updated: 2018-01-25T20:28:27.943038677+08:00
+updated: 2018-01-31T09:34:01.672801926+08:00
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -35,7 +35,7 @@ imports:
 - name: github.com/dchest/blake256
   version: dee3fe6eb0e98dc774a94fc231f85baf7c29d360
 - name: github.com/golang/protobuf
-  version: c65a0412e71e8b9b3bfd22925720d23c0f054237
+  version: 925541529c1fa6821df4e44ce2723319eb2be768
   subpackages:
   - proto
   - ptypes
@@ -45,7 +45,7 @@ imports:
 - name: github.com/HcashOrg/bitset
   version: 3b5f0c752dfbeeda856fd6af60e997257ca399fc
 - name: github.com/HcashOrg/hcashd
-  version: 3e2e8c49aa660b613b2d2d0b97f2d01b55f2a1fc
+  version: 9b2775d47bb62545702d17c704512a579a40ac62
   subpackages:
   - blockchain
   - blockchain/internal/dbnamespace
@@ -83,7 +83,7 @@ imports:
   subpackages:
   - rotator
 - name: github.com/LoCCS/bliss
-  version: ff6e5ed7483bbd2ad67146db5ceebf70b1b9e7bd
+  version: f3305c265fccfe3d0ce2f9677fa902f9679c58a4
   subpackages:
   - huffman
   - params
@@ -99,7 +99,7 @@ imports:
   subpackages:
   - container/stack
 - name: golang.org/x/crypto
-  version: 3d37316aaa6bd9929127ac9a527abf408178ea7b
+  version: 1875d0a70c90e57f11972aefd42276df65e895b9
   subpackages:
   - nacl/secretbox
   - pbkdf2
@@ -124,7 +124,7 @@ imports:
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: ef802241c90f84d84d644a2d8d0de8ee96038c9c
+  version: 3dbebcf8efb6a5011a60c2b4591c1022a759af8a
   subpackages:
   - unix
   - windows
@@ -165,7 +165,7 @@ imports:
   - transport
 testImports:
 - name: github.com/davecgh/go-spew
-  version: ecdeabc65495df2dec95d7c4a4c3e021903035e5
+  version: db69d09d2c587e9b9677f991dfcab1fc24d9086e
   subpackages:
   - spew
 - name: github.com/pmezard/go-difflib
