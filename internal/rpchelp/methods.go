@@ -76,6 +76,7 @@ var Methods = []struct {
 	{"signrawtransactions", []interface{}{(*hcashjson.SignRawTransactionsResult)(nil)}},
 	{"validateaddress", []interface{}{(*hcashjson.ValidateAddressWalletResult)(nil)}},
 	{"verifymessage", returnsBool},
+	{"verifyblissmessage", returnsBool},
 	{"version", []interface{}{(*map[string]hcashjson.VersionResult)(nil)}},
 	{"walletlock", nil},
 	{"walletpassphrase", nil},
