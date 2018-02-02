@@ -37,6 +37,7 @@ import (
 	"github.com/HcashOrg/hcashwallet/wallet/txrules"
 	"github.com/HcashOrg/hcashwallet/wallet/udb"
 	"github.com/HcashOrg/hcashwallet/walletdb"
+	"github.com/HcashOrg/hcashd/crypto/bliss"
 )
 
 const (
@@ -1893,12 +1894,15 @@ func (w *Wallet) SignMessage(msg string, addr hcashutil.Address) (sig []byte, er
 	if err != nil {
 		return nil, err
 	}
-	pkCast, ok := privKey.(*secp256k1.PrivateKey)
-	if !ok {
-		return nil, fmt.Errorf("Unable to create secp256k1.PrivateKey" +
-			"from chainec.PrivateKey")
+
+	switch pkCast := privKey.(type) {
+	case *secp256k1.PrivateKey:
+		return secp256k1.SignCompact(secp256k1.S256(), pkCast, messageHash, true)
+	case bliss.PrivateKey:
+		return  bliss.SignCompact(pkCast,messageHash)
+	default:
+		return nil, fmt.Errorf("Unsupported signature algorithm.")
 	}
-	return secp256k1.SignCompact(secp256k1.S256(), pkCast, messageHash, true)
 }
 
 // VerifyMessage verifies that sig is a valid signature of msg and was created

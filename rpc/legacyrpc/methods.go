@@ -34,6 +34,7 @@ import (
 	"github.com/HcashOrg/hcashwallet/wallet/udb"
 
 	"strconv"
+	"github.com/HcashOrg/hcashd/crypto/bliss"
 )
 
 // API version constants
@@ -146,6 +147,7 @@ var rpcHandlers = map[string]struct {
 	"ticketsforaddress":       {handler: ticketsForAddress},
 	"validateaddress":         {handler: validateAddress},
 	"verifymessage":           {handler: verifyMessage},
+	"verifyblissmessage":      {handler: verifyBlissMessage},
 	"version":                 {handler: versionNoChainRPC, handlerWithChain: versionWithChainRPC},
 	"walletinfo":              {handlerWithChain: walletInfo},
 	"walletlock":              {handler: walletLock},
@@ -3227,6 +3229,7 @@ func verifyMessage(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 		if a.DSA(a.Net()) != chainec.ECTypeSecp256k1 {
 			goto WrongAddrKind
 		}
+		
 	default:
 		goto WrongAddrKind
 	}
@@ -3241,6 +3244,39 @@ func verifyMessage(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 
 WrongAddrKind:
 	return nil, InvalidParameterError{errors.New("address must be secp256k1 P2PK or P2PKH")}
+}
+
+// verifyBlissMessage handles the verifyblissmessage command by verifying the provided
+// compact signature for the given address and message with bliss algorithm.
+func verifyBlissMessage(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
+	cmd := icmd.(*hcashjson.VerifyBlissMessageCmd)
+	var valid bool
+
+	pubkey,err := hex.DecodeString(cmd.PubKey)
+	if err != nil {
+		return nil, err
+	}
+	key,err := bliss.Bliss.ParsePubKey(pubkey)
+	if err != nil {
+		return  nil, err
+	}
+
+	var buf bytes.Buffer
+	wire.WriteVarString(&buf, 0, "Hypercash Signed Message:\n")
+	wire.WriteVarString(&buf, 0, cmd.Message)
+	messageHash := chainhash.HashB(buf.Bytes())
+
+	sig, err := base64.StdEncoding.DecodeString(cmd.Signature)
+	if err != nil {
+		return nil, err
+	}
+
+	valid, err = bliss.VerifyCompact(key,messageHash,sig)
+	if err != nil {
+		return  nil, err
+	}
+
+	return valid, nil
 }
 
 // versionWithChainRPC handles the version request when the RPC server has been
