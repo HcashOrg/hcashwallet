@@ -1,5 +1,5 @@
-hash: 0ab86e8536c59079c75a4995276ef7e7cc22eb4a4cca9ecd8a810a5cd788bc69
-updated: 2018-01-31T09:34:01.672801926+08:00
+hash: a2ca335325a0498479cbfece8c5881266ff3d9795d278bba09fde729d92be504
+updated: 2018-02-07T16:26:27.178109862+08:00
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -45,7 +45,7 @@ imports:
 - name: github.com/HcashOrg/bitset
   version: 3b5f0c752dfbeeda856fd6af60e997257ca399fc
 - name: github.com/HcashOrg/hcashd
-  version: 9b2775d47bb62545702d17c704512a579a40ac62
+  version: 8b0cbd7998aa804a9c10fd5bd18517276910d686
   subpackages:
   - blockchain
   - blockchain/internal/dbnamespace
@@ -99,7 +99,7 @@ imports:
   subpackages:
   - container/stack
 - name: golang.org/x/crypto
-  version: 1875d0a70c90e57f11972aefd42276df65e895b9
+  version: d9133f5469342136e669e85192a26056b587f503
   subpackages:
   - nacl/secretbox
   - pbkdf2
