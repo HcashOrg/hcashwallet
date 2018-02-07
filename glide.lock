@@ -1,5 +1,5 @@
 hash: 0ab86e8536c59079c75a4995276ef7e7cc22eb4a4cca9ecd8a810a5cd788bc69
-updated: 2018-01-31T09:34:01.672801926+08:00
+updated: 2018-02-07T16:09:13.197294034+08:00
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -35,7 +35,7 @@ imports:
 - name: github.com/dchest/blake256
   version: dee3fe6eb0e98dc774a94fc231f85baf7c29d360
 - name: github.com/golang/protobuf
-  version: 925541529c1fa6821df4e44ce2723319eb2be768
+  version: bbd03ef6da3a115852eaf24c8a1c46aeb39aa175
   subpackages:
   - proto
   - ptypes
@@ -45,7 +45,7 @@ imports:
 - name: github.com/HcashOrg/bitset
   version: 3b5f0c752dfbeeda856fd6af60e997257ca399fc
 - name: github.com/HcashOrg/hcashd
-  version: 9b2775d47bb62545702d17c704512a579a40ac62
+  version: fcad45567962ddbf2df3311271554b617f90b192
   subpackages:
   - blockchain
   - blockchain/internal/dbnamespace
@@ -99,7 +99,7 @@ imports:
   subpackages:
   - container/stack
 - name: golang.org/x/crypto
-  version: 1875d0a70c90e57f11972aefd42276df65e895b9
+  version: d9133f5469342136e669e85192a26056b587f503
   subpackages:
   - nacl/secretbox
   - pbkdf2
@@ -110,7 +110,7 @@ imports:
   - sha3
   - ssh/terminal
 - name: golang.org/x/net
-  version: 0ed95abb35c445290478a5348a7b38bb154135fd
+  version: 2fb46b16b8dda405028c50f7c7f0f9dd1fa6bfb1
   subpackages:
   - context
   - http2
@@ -124,7 +124,7 @@ imports:
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: 3dbebcf8efb6a5011a60c2b4591c1022a759af8a
+  version: 37707fdb30a5b38865cfb95e5aab41707daec7fd
   subpackages:
   - unix
   - windows
@@ -136,7 +136,7 @@ imports:
   - unicode/bidi
   - unicode/norm
 - name: google.golang.org/genproto
-  version: 4eb30f4778eed4c258ba66527a0d4f9ec8a36c45
+  version: 2b5a72b8730b0b16380010cfe5286c42108d88e7
   subpackages:
   - googleapis/rpc/status
 - name: google.golang.org/grpc
@@ -165,7 +165,7 @@ imports:
   - transport
 testImports:
 - name: github.com/davecgh/go-spew
-  version: db69d09d2c587e9b9677f991dfcab1fc24d9086e
+  version: 87df7c60d5820d0f8ae11afede5aa52325c09717
   subpackages:
   - spew
 - name: github.com/pmezard/go-difflib
@@ -173,6 +173,6 @@ testImports:
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
-  version: 87b1dfb5b2fa649f52695dd9eae19abe404a4308
+  version: be8372ae8ec5c6daaed3cc28ebf73c54b737c240
   subpackages:
   - assert
