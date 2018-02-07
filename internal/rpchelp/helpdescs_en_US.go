@@ -531,6 +531,13 @@ var helpDescsEnUS = map[string]string{
 	"verifymessage-message":   "The message to verify",
 	"verifymessage--result0":  "Whether the message was signed with the private key of 'address'",
 
+	// VerifyBlissMessageCmd help.
+	"verifyblissmessage--synopsis": "Verify a message was signed with the associated private key of some address.",
+	"verifyblissmessage-pubKey":   "public Key used to sign message",
+	"verifyblissmessage-signature": "The signature to verify",
+	"verifyblissmessage-message":   "The message to verify",
+	"verifyblissmessage--result0":  "Whether the message was signed with the private key of 'address'",
+
 	// Version help
 	"version--synopsis":       "Returns application and API versions (semver) keyed by their names",
 	"version--result0--desc":  "Version objects keyed by the program or API name",
